@@ -1,6 +1,6 @@
-# 4G LTE Mobility Management — document summary
+# Mobility Management — eRAN21.1 PDF summary
 
-Excel summary of the three Huawei eRAN21.1 Mobility Management feature books. Operator Excel format (dark-blue title, yellow-green sections, light-blue headers, grey rows).
+Exclusive Excel summary of the three Huawei feature-parameter documents. No load-balance agent content.
 
 ## File
 
@@ -10,25 +10,37 @@ Excel summary of the three Huawei eRAN21.1 Mobility Management feature books. Op
 python3 tools/build_mobility_workbook.py
 ```
 
+## Format (attached Excel sample)
+
+| Element | Background | Text |
+|---|---|---|
+| Title bar (row 1, A–F) | Dark blue `#005596` | White, bold, centered |
+| Section header | Yellow `#FFFF00` | Bold green `#008000` |
+| Table header | Light blue `#DDEBF7` | Black, bold |
+| Data rows | Light grey `#F2F2F2` | Black |
+
+Six columns A–F. White spacer rows. Calibri. Gridlines on.
+
+Each feature follows SN-1 to SN-11 from the original template, grouped as:
+
+1. Feature Introduction  
+2. Triggering Conditions  
+3. eNodeB Actions  
+4. Prerequisites  
+5. Mutual impact and related features  
+6. License  
+7. All parameter list  
+8. Final MML (sequence)
+
 ## Sheets
 
-| Sheet | Content |
+| Sheet | Source PDF |
 |---|---|
-| Mobility Management | Introduction + Robi layer map |
-| Idle Mode Management | Feature 1 — SN-1 to SN-11 + MML |
-| Connected Mode | Feature 2 — A1–A5 / FreqPri + MML |
-| Intra-RAT MLB | Feature 3 — Huawei MLB + MML |
+| Mobility Management | Cover / how the three books fit |
+| Idle Mode Management | Idle Mode Management, eRAN21.1, Issue 04 |
+| Connected Mode | Mobility Management in Connected Mode, eRAN21.1, Issue 08 |
+| Intra-RAT MLB | Intra-RAT Mobility Load Balancing, eRAN21.1, Issue 10 |
 
-Each feature sheet follows the original template: Introduction, Triggering Conditions, eNodeB Actions, prerequisites, mutual impact, license, full parameter list, sequential MML.
+The original CSV sample MML (`SymbolShutdownSwitch`) is Symbol Power Saving and is not used.
 
-## Sources
-
-1. Idle Mode Management, eRAN21.1, Issue 04  
-2. Mobility Management in Connected Mode, eRAN21.1, Issue 08  
-3. Intra-RAT Mobility Load Balancing, eRAN21.1, Issue 10  
-
-## Notes
-
-- Proposed values are Robi engineering recommendations, not Huawei defaults.
-- Original CSV `SymbolShutdownSwitch` row is power saving and is not used.
-- MML uses placeholder `LocalCellId` / `DlEarfcn`. Validate in MAE-Access.
+MML uses placeholder `LocalCellId` / `DlEarfcn`. Confirm enums, defaults and syntax in MAE-Access / the version-matched parameter reference.
