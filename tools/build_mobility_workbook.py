@@ -10,13 +10,12 @@ Format from the user's Excel screenshot (must follow):
   Six columns A-F
   Calibri, visible gridlines
 
-Content: Mobility Management — Idle / Connected / Intra-RAT MLB (eRAN21.1)
-plus Daily KPI tracker.
+Content: document summary of Mobility Management —
+Idle Mode, Connected Mode, Intra-RAT MLB (Huawei eRAN21.1).
 """
 
 import os
 from openpyxl import Workbook
-from openpyxl.chart import BarChart, Reference
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.page import PageMargins
@@ -147,20 +146,20 @@ def build_cover(wb):
     r = section(ws, r, cols, "Section 1: Feature Introduction")
     r = headers(ws, r, ["Topic", "RAT", "Feature Part", "Parameter ID / Check Item", "Current Value / Status", "Notes / Rationale"])
     intro_rows = [
-        ["Purpose", "LTE FDD", "Intra-LTE mobility + MLB", "DL user-throughput gap among capacity layers", "Target 1-2 Mbps (now >10 Mbps worst cells)",
-         "Gap > 2 Mbps is an investigation trigger, not automatic proof that A1-A4 or MLB must change."],
+        ["Purpose", "LTE FDD", "Document summary of Mobility Management", "Idle Mode + Connected Mode + Intra-RAT MLB", "Huawei eRAN21.1 feature books",
+         "Parameter and feature summary from the three eRAN21.1 Mobility Management documents. SN-1 to SN-11 on each feature sheet."],
         ["Vendor / release", "LTE FDD", "Huawei eRAN21.1", "Idle Issue 04 / Connected Issue 08 / MLB Issue 10", "Documents already reviewed",
          "All parameter names are from those feature books. Confirm ranges in the matching parameter reference / MAE."],
         ["Capacity layers", "LTE FDD", "L1800 / L2100 / L2600 C1-C4", "20 / 15 / 4x20 MHz", "Capacity-balancing pool",
          "Nominal PRB share 100/75/100. Use Load=N/C with ActiveUe + SpectralEff. Do not equalize raw UE count."],
         ["Coverage layer", "LTE FDD", "L900 5 MHz indoor", "Coverage HO in = YES", "Routine MLB target = NO",
          "A5/coverage fallback to L900. A1/FreqPri escape from L900 when high-band is strong. Do not fill 5 MHz for TP equality."],
-        ["Workbook tree", "LTE FDD", "Mobility Management", "Idle Mode / Connected Mode / Intra-RAT MLB / Daily KPI", "Same folder order as requested",
+        ["Workbook tree", "LTE FDD", "Mobility Management", "Idle Mode Management / Connected Mode / Intra-RAT MLB", "Same folder order as requested",
          "Each feature sheet uses this same color format: dark-blue title, yellow-green section, light-blue header, grey data."],
         ["Template leftover", "LTE FDD", "Original CSV sample MML", "ENodeBAlgoSwitch / SymbolShutdownSwitch", "NOT USED",
          "That row is Symbol Power Saving, not mobility. It is removed from all MML tables in this book."],
-        ["Safety", "LTE FDD", "Change control", "One parameter family per cluster", "Calibrate before live CR",
-         "Rollback if drop, VoLTE, re-est, HO success or L900 indoor KPI degrades. Do not daily overwrite 7-day learned MLB thresholds."],
+        ["Safety", "LTE FDD", "Change control", "One parameter family per cluster", "Calibrate before live change",
+         "Rollback if drop, VoLTE, re-est, HO success or L900 indoor KPI degrades. Huawei learned MLB thresholds collect 7 days and refresh every 7 days — do not overwrite them every day."],
     ]
     for row in intro_rows:
         r = data_row(ws, r, row, h=32)
@@ -174,7 +173,7 @@ def build_cover(wb):
         ["L2600 C2", "LTE FDD", "Primary capacity", "20 MHz / 100 PRB / idle prio 7", "MLB source+target, A4", "Do not stack C1>C2>C3>C4 as static common priority."],
         ["L2600 C3", "LTE FDD", "Primary capacity", "20 MHz / 100 PRB / idle prio 7", "MLB source+target, A4", "CA SCell role must be checked before calling a carrier unloaded."],
         ["L2600 C4", "LTE FDD", "Primary capacity", "20 MHz / 100 PRB / idle prio 7", "MLB source+target, A4", "Same as other L2600 carriers."],
-        ["L1800", "LTE FDD", "Broad capacity + mobility anchor", "20 MHz / 100 PRB / idle prio 6", "MLB source+target, A4 + coverage", "Typical Open value on Daily KPI sheet."],
+        ["L1800", "LTE FDD", "Broad capacity + mobility anchor", "20 MHz / 100 PRB / idle prio 6", "MLB source+target, A4 + coverage", "Typical fallback below L2600 when high-band load is high."],
         ["L2100", "LTE FDD", "Capacity (smaller BW)", "15 MHz / 75 PRB / idle prio 5 or 6", "MLB source+target, SE-normalized", "Do not copy 20 MHz UE-number threshold onto L2100."],
         ["L900", "LTE FDD", "Indoor / deep coverage only", "5 MHz / 25 PRB / idle prio 2", "NOT in capacity pool", "Coverage HO permitted. Connected/idle MLB targeting prohibited. CIO toward L900 = 0."],
     ]
@@ -192,7 +191,6 @@ def build_cover(wb):
         ["Data row", "LTE FDD", "Content", "Grey #F2F2F2 / black", "Wrapped text", "Comfortable contrast. No dark background."],
         ["SN-1 to SN-11", "LTE FDD", "Original template sequence", "Working / Highlight / Benefit / Selection / Activation / Prerequisite / Mutual / Relation / License / Parameter list / MML",
          "Filled from eRAN21.1 books", "Chart / doc ref is in the last column (Notes)."],
-        ["Daily KPI", "LTE FDD", "Date / Open / High / Low / Close", "Open=L1800 TP, High=max layer, Low=min layer, Close=gap", "Investigate if Close>2", "L900 is not included in High/Low."],
     ]
     for row in how:
         r = data_row(ws, r, row, h=28)
@@ -635,7 +633,7 @@ def mlb_sections():
                 ["PRB_USAGE vs PRB_VALUATION", "LTE FDD", "Same mode", "Exclusive", "Cannot both [MLB] pp.216, 245", ""],
                 ["MLB vs FreqPri reverse pair", "LTE FDD", "Feature 2", "No reverse target", "Ping-pong [CM] p.303", ""],
                 ["MLB toward L900", "LTE FDD", "Indoor VoLTE / 5 MHz", "Forbidden", "Coverage layer becomes capacity", "Hard guardrail"],
-                ["Smart learned thd", "LTE FDD", "BW change / upgrade / eval SW change", "Freeze AI CRs in relearn week", "Stale or reset [MLB] pp.29-31", ""],
+                ["Huawei learned neighbor thd", "LTE FDD", "BW change / upgrade / eval SW change", "Allow 7-day relearn after those events", "Stale or reset [MLB] pp.29-31", "Huawei native NCellTrigThldSmartOptAlgoSw. Collects 7 days, recalculates every 7 days."],
                 ["Related: Idle / Connected / CA / ES", "LTE FDD", "F1 idle method; F2 HO engine; CA PCC; ES target exclusion",
                  "A4 + ONLY_STRONGEST + L900 block", "Do not dump 4G overflow to 2G/3G for this TP KPI", ""],
             ],
@@ -649,7 +647,7 @@ def mlb_sections():
                 ["MLB event A5", "LTE FDD", "MlbInterFreqHoEventType=A5", "Intra-LTE Load Balancing for Non-cosited Cells", "Stay on A4 if missing", "[MLB] pp.142-143"],
                 ["Blind MLB", "LTE FDD", "InterFreqBlindMlbSwitch", "Blind option if sold", "Keep OFF", ""],
                 ["CA user transfer", "LTE FDD", "CaUserLoadTransferSw", "CA + MLB CA-transfer — verify", "Else CA UEs filtered", "[MLB] p.157"],
-                ["Smart n-cell thd", "LTE FDD", "NCellTrigThldSmartOptAlgoSw", "SON MLB option + MAE counters", "AI monitors, no daily MOD", ""],
+                ["Huawei learned n-cell thd", "LTE FDD", "NCellTrigThldSmartOptAlgoSw", "Huawei option + MAE 15-min counters", "Optional; 7-day learn / 7-day refresh", "Do not overwrite learned pair thresholds every day."],
             ],
         },
         {
@@ -665,13 +663,13 @@ def mlb_sections():
                 ["6", "LTE FDD", "eval SW", "ActiveUeBasedLoadEvalSw", "ON", "Table 5-5"],
                 ["7", "LTE FDD", "eval SW", "SpectralEffBasedLoadEvalSw", "ON", "Table 5-5"],
                 ["8", "LTE FDD", "eval SW", "LoadTransferEnhSw / CaUserLoadTransferSw", "Enh ON; CA after audit", "pp.129-136"],
-                ["9", "LTE FDD", "CELLMLB", "InterFreqMlbUeNumThd + MlbUeNumOffset", "Calibrate per layer AFTER Active+SE ON", "MAIN daily CR. Do not copy 20 MHz thd to L2100."],
+        ["9", "LTE FDD", "CELLMLB", "InterFreqMlbUeNumThd + MlbUeNumOffset", "Calibrate per layer AFTER Active+SE ON", "Do not copy a 20 MHz threshold onto L2100."],
                 ["10", "LTE FDD", "CELLMLB", "MlbMaxUeNum / MlbTrigJudgePeriod / InterFreqLoadEvalPrd", "Conservative; not ≥40 with 5 s", "p.136"],
                 ["11", "LTE FDD", "CELLMLB", "FreqSelectStrategy / MlbHoCellSelectStrategy", "LOADPRIORITY / ONLY_STRONGEST_CELL", "p.137, Table 6-5"],
                 ["12", "LTE FDD", "EUTRANINTERNFREQ", "MlbTargetInd / MlbInterFreqHoEventType / IfMlbThdRsrpOffset", "Capacity ALLOWED+A4; L900 blocked; offset 0", "pp.28, 129"],
                 ["13", "LTE FDD", "EUTRANINTERFREQNCELL", "NoHoFlag / NCellHoSuccRateThld", "PERMIT coverage; do not lower SR thd to force MLB", ""],
                 ["14", "LTE FDD", "CELLMLBUESEL", "ARP/PRB/MCS/QCI pick + protect timers", "Protect QCI1; no edge-PRB hunting", "pp.130-135"],
-                ["15", "LTE FDD", "smart", "NCellTrigThldSmartOptAlgoSw / learned pair thds", "Monitor only daily", "7-day learn. No daily overwrite."],
+                ["15", "LTE FDD", "CELLMLB / related", "NCellTrigThldSmartOptAlgoSw / learned pair thds", "Optional Huawei function", "7-day data collection, then refresh every 7 days."],
                 ["16", "LTE FDD", "RRCCONNSTATETIMER", "T320ForLoadBalance", "MIN30/60", "Idle path"],
                 ["17", "LTE FDD", "CELLPRBVALMLB / PRB mode", "PRB_ONLY / valuation", "OFF unless GBR problem", "Not a TP-fairness tool"],
             ],
@@ -698,7 +696,7 @@ def mlb_sections():
                  "InterFreqMlbSwitch will be ON", "Core connected equalisation. Huawei ONLY_STRONGEST_CELL."],
                 ["5", "LTE FDD", "CELLMLB",
                  "MOD CELLMLB: LocalCellId=<x>, InterFreqMlbUeNumThd=<calib>, MlbUeNumOffset=<hyst>, MlbMaxUeNum=<conservative>, MlbTrigJudgePeriod=<stable>, InterFreqLoadEvalPrd=<not 5s-if-maxUE-large>;",
-                 "Active+SE already ON", "MAIN guarded CR. Do not copy 20 MHz thd to L2100."],
+                 "Active+SE already ON", "Do not copy a 20 MHz threshold onto L2100."],
                 ["6", "LTE FDD", "CA / CELLALGOSWITCH",
                  "Enable CaUserLoadTransferSw only after PCell/SCell/active-CC baseline;",
                  "Target CA capability path", "PRB MLB still will not move CA UEs."],
@@ -719,117 +717,6 @@ def mlb_sections():
     ]
 
 
-def build_daily(wb):
-    ws = wb.create_sheet("Daily KPI")
-    cols = 6
-    widths(ws, [16, 16, 16, 16, 16, 54])
-    setup(ws, "Daily KPI")
-
-    r = 1
-    r = title(ws, r, cols, "Daily KPI - Date / Open / High / Low / Close Detailed Notes")
-    r = spacer(ws, r, cols)
-
-    r = section(ws, r, cols, "Section 1: Feature Introduction")
-    r = headers(ws, r, ["Topic", "RAT", "Feature Part", "Parameter ID / Check Item", "Current Value / Status", "Notes / Rationale"])
-    for row in [
-        ["Date", "LTE FDD", "Busy-hour date", "KPI date", "Fill daily", "White-on-blue title only. Table uses the attached light format."],
-        ["Open", "LTE FDD", "Anchor layer TP", "L1800 DL user throughput Mbps", "Capacity layer", "Change to L2100 if L1800 is missing on that sector."],
-        ["High", "LTE FDD", "Best capacity layer", "Max DL user TP among L1800/L2100/L2600 C1-C4", "Mbps", "Do not include L900."],
-        ["Low", "LTE FDD", "Worst capacity layer", "Min DL user TP among capacity layers", "Mbps", "Worst cell/layer for the gap."],
-        ["Close", "LTE FDD", "Throughput gap", "High minus Low", "Investigate if Close > 2 Mbps", "CR only after RCA pass. Not automatic MLB change."],
-    ]:
-        r = data_row(ws, r, row, h=24)
-    r = spacer(ws, r, cols)
-    r = spacer(ws, r, cols)
-
-    r = section(ws, r, cols, "Section 2: Triggering Conditions  (RCA when Close > 2 Mbps)")
-    r = headers(ws, r, ["Feature Part", "RAT", "MO Name / Check Item", "When Power Saving Starts", "Parameter Detail", "User Experience Consideration"])
-    for row in [
-        ["Class 1 Load / PCell", "LTE FDD", "Active UE + PRB + spare target C", "Low TP + high PRB + high users; target spare + good overlap", "YES — Feature 3", "Active-UE MLB / LOADPRIORITY / modest thd. Column name from template = when the check starts."],
-        ["Class 2 Heavy-user PRB", "LTE FDD", "Few UEs, very high PRB, non-CA", "PRB supplement only", "YES only as supplement", "Never sole algorithm if CA high."],
-        ["Class 3 CA / SCell", "LTE FDD", "PCell vs SCell / active CC", "PCell looks bad but SCell healthy, or SCell never on", "NO first", "CA combo / activation / scheduler."],
-        ["Class 4 RF / interference", "LTE FDD", "CQI / SINR / RSRP", "Low TP + low CQI, PRB not high", "NO", "RF / PCI / overshoot / external."],
-        ["Class 5 UE capability", "LTE FDD", "Band support", "L2600 empty because UEs have no band", "NO", "Device mix."],
-        ["Class 6 Mobility / meas", "LTE FDD", "Prep/Exec/MeasSucc", "High Prep, low Exec", "NO until flags/NRT/A4 fixed", "Connected Mode audit."],
-        ["Class 7 HW / transport", "LTE FDD", "Alarms / HighLoad transport", "Low TP, resources look free", "NO — illegal target", "Clear alarm first."],
-        ["Class 8 L900 indoor", "LTE FDD", "High-band MR poor", "Users survive only on L900", "NO forced offload", "RF / indoor. A1-escape only if overlap is strong."],
-    ]:
-        r = data_row(ws, r, row, h=28)
-    r = spacer(ws, r, cols)
-    r = spacer(ws, r, cols)
-
-    r = section(ws, r, cols, "Section 3: eNodeB Actions  (approval rule and least-invasive CR)")
-    r = headers(ws, r, ["Action Area", "RAT", "Feature Part", "eNodeB Action", "Parameter / Condition", "Operational Meaning"])
-    for row in [
-        ["Approval rule", "LTE FDD", "Daily agent",
-         "CR only if Close>2 AND sustained AND source load high AND target spare C AND target RF OK AND HO healthy AND no alarm AND drop/VoLTE/re-est/L900 OK",
-         "All must be true", "Else RCA only. One parameter family per cluster."],
-        ["Order 1", "LTE FDD", "Eligibility", "Fix NRT / meas flag / L900 wrongly set as MLB target", "F2+F3 MML step 1-2", "Most silent failures."],
-        ["Order 2", "LTE FDD", "Load model", "Turn ON ActiveUe + SpectralEff", "F3 Section 3", "Required on 15 vs 20 MHz."],
-        ["Order 3", "LTE FDD", "Trigger / volume", "Modest InterFreqMlbUeNumThd / offset / MlbMaxUeNum", "After load model ON", "MAIN daily CR."],
-        ["Order 4", "LTE FDD", "Four L2600", "LOADPRIORITY; equal idle priority", "Load exchange OK", "Not static C1>C2>C3>C4."],
-        ["Order 5-7", "LTE FDD", "CA / idle bounce / L900 sticky", "CaUserLoadTransfer after audit; idle T320 hold; A1/FreqPri escape", "Never weaken L900 floors", "Escape only where high-band MR is good."],
-        ["Rollback", "LTE FDD", "Guardrail", "Rollback if L900/VoLTE/drop/HO/re-est worsen or congestion only moves", "Do not daily MOD learned SON thds", "Evaluate at sector-cluster level."],
-    ]:
-        r = data_row(ws, r, row, h=30)
-    r = spacer(ws, r, cols)
-    r = spacer(ws, r, cols)
-
-    r = section(ws, r, cols, "Section 4: Daily tracker  (fill Open / High / Low; Close = High − Low)")
-    r = headers(ws, r, ["Date", "Open", "High", "Low", "Close", "Notes / Rationale"])
-    # header mapping row already is Date Open High Low Close
-    sample = [
-        ["Day-1", 18.0, 22.0, 9.5, None, "Example only — replace with live BH. Worst layer in Notes."],
-        ["Day-2", 17.5, 21.0, 10.0, None, ""],
-        ["Day-3", 19.0, 20.5, 11.2, None, ""],
-        ["Day-4", 18.2, 19.8, 16.0, None, "Gap falling after first guarded CR."],
-        ["Day-5", 18.5, 19.4, 17.6, None, ""],
-        ["Day-6", 18.8, 19.2, 17.9, None, ""],
-        ["Day-7", 18.6, 19.0, 17.8, None, "Close near 1-2 Mbps target."],
-    ]
-    first_data = r
-    for i, row in enumerate(sample):
-        excel_row = r
-        put(ws, r, 1, row[0], bg=DATA_BG, align=wrap_c, h=20)
-        put(ws, r, 2, row[1], bg=DATA_BG, align=wrap_c, h=20)
-        put(ws, r, 3, row[2], bg=DATA_BG, align=wrap_c, h=20)
-        put(ws, r, 4, row[3], bg=DATA_BG, align=wrap_c, h=20)
-        put(ws, r, 5, f"=C{excel_row}-D{excel_row}", bg=DATA_BG, align=wrap_c, h=20)
-        put(ws, r, 6, row[5], bg=DATA_BG, align=top, h=20)
-        r += 1
-    last_data = r - 1
-
-    # blank input rows
-    for _ in range(10):
-        for c in range(1, 6):
-            put(ws, r, c, "", bg=DATA_BG, h=18)
-        put(ws, r, 5, f"=IF(OR(C{r}=\"\",D{r}=\"\"),\"\",C{r}-D{r})", bg=DATA_BG, align=wrap_c, h=18)
-        put(ws, r, 6, "", bg=DATA_BG, h=18)
-        r += 1
-
-    r = spacer(ws, r, cols)
-    chart = BarChart()
-    chart.type = "col"
-    chart.grouping = "clustered"
-    chart.title = "High / Low / Close (example — replace with live BH)"
-    chart.y_axis.title = "Mbps"
-    chart.x_axis.title = "Date"
-    chart.style = 10
-    data = Reference(ws, min_col=3, min_row=first_data - 1, max_col=5, max_row=last_data)
-    cats = Reference(ws, min_col=1, min_row=first_data, max_row=last_data)
-    chart.add_data(data, titles_from_data=True)
-    chart.set_categories(cats)
-    chart.width = 18
-    chart.height = 8
-    try:
-        for i, series in enumerate(chart.series):
-            series.graphicalProperties.solidFill = ["5B9BD5", "A9D08E", "F4B183"][i]
-    except Exception:
-        pass
-    ws.add_chart(chart, f"A{r}")
-    return ws
-
-
 def main():
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     wb = Workbook()
@@ -840,7 +727,6 @@ def main():
                         "Mobility Management in Connected Mode - Detailed Notes", connected_sections())
     build_feature_sheet(wb, "Intra-RAT MLB",
                         "Intra-RAT Mobility Load Balancing - Detailed Notes", mlb_sections())
-    build_daily(wb)
     wb.properties.title = "Mobility Management Detailed Notes"
     wb.properties.creator = "Robi Axiata PLC RNO"
     wb.properties.subject = "eRAN21.1 Idle / Connected / Intra-RAT MLB — operator Excel format"

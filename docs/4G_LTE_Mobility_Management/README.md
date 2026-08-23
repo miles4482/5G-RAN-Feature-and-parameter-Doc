@@ -1,16 +1,6 @@
-# 4G LTE Mobility Management Workbook (Huawei eRAN21.1)
+# 4G LTE Mobility Management — document summary
 
-Excel file uses the **attached operator format** (same colors as the Symbol Power Saving sample):
-
-| Element | Background | Text |
-|---|---|---|
-| Title bar (row 1, A–F) | Dark blue `#005596` | White, bold, centered |
-| Section header | Yellow `#FFFF00` | Bold green `#008000` |
-| Table header | Light blue `#DDEBF7` | Black, bold |
-| Data rows | Light grey `#F2F2F2` | Black |
-| Spacing | White empty rows | — |
-
-Six columns A–F. Calibri. Gridlines on. No dark background.
+Excel summary of the three Huawei eRAN21.1 Mobility Management feature books. Operator Excel format (dark-blue title, yellow-green sections, light-blue headers, grey rows).
 
 ## File
 
@@ -27,20 +17,15 @@ python3 tools/build_mobility_workbook.py
 | Mobility Management | Introduction + Robi layer map |
 | Idle Mode Management | Feature 1 — SN-1 to SN-11 + MML |
 | Connected Mode | Feature 2 — A1–A5 / FreqPri + MML |
-| Intra-RAT MLB | Feature 3 — MLB + MML |
-| Daily KPI | Date / Open / High / Low / Close tracker |
+| Intra-RAT MLB | Feature 3 — Huawei MLB + MML |
 
-Each feature sheet is split like the sample: Section 1 Introduction, Section 2 Triggering Conditions, Section 3 eNodeB Actions, then prerequisites, impacts, license, parameter list, MML.
+Each feature sheet follows the original template: Introduction, Triggering Conditions, eNodeB Actions, prerequisites, mutual impact, license, full parameter list, sequential MML.
 
-## Daily KPI
+## Sources
 
-- **Date** = busy-hour date  
-- **Open** = L1800 DL user throughput (Mbps)  
-- **High** = max capacity-layer TP  
-- **Low** = min capacity-layer TP  
-- **Close** = High − Low (investigate if > 2 Mbps)  
-
-L900 is not included in High / Low.
+1. Idle Mode Management, eRAN21.1, Issue 04  
+2. Mobility Management in Connected Mode, eRAN21.1, Issue 08  
+3. Intra-RAT Mobility Load Balancing, eRAN21.1, Issue 10  
 
 ## Notes
 
