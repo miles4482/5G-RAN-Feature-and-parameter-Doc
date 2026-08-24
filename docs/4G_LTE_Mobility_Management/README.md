@@ -4,7 +4,7 @@ Exclusive Excel summary of the three Huawei feature-parameter documents. No load
 
 ## File
 
-[Mobility_Management_eRAN21.1_Workbook.xlsx](./Mobility_Management_eRAN21.1_Workbook.xlsx)
+[4G_LTE_Mobility_Management_eRAN21.1_v2.0.xlsx](./4G_LTE_Mobility_Management_eRAN21.1_v2.0.xlsx)
 
 ```bash
 python3 tools/build_mobility_workbook.py

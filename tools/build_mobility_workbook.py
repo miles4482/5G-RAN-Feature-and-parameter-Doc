@@ -22,7 +22,7 @@ from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.hyperlink import Hyperlink
 from openpyxl.worksheet.page import PageMargins
 
-OUT = "/workspace/docs/4G_LTE_Mobility_Management/Mobility_Management_eRAN21.1_Workbook.xlsx"
+OUT = "/workspace/docs/4G_LTE_Mobility_Management/4G_LTE_Mobility_Management_eRAN21.1_v2.0.xlsx"
 COLS = 8
 
 BLUE = "005596"
@@ -973,8 +973,9 @@ def main():
     build_sheet(wb, "Connected Mode", "Mobility Management in Connected Mode - Detailed Notes", connected_blocks(), tab="1F4E79")
     build_sheet(wb, "Intra-RAT MLB", "Intra-RAT Mobility Load Balancing - Detailed Notes", mlb_blocks(), tab="2E75B6")
     del wb["tmp"]
-    wb.properties.title = "eRAN21.1 Mobility Management Detailed Notes"
+    wb.properties.title = "4G LTE Mobility Management eRAN21.1 v2.0"
     wb.properties.subject = "Idle / Connected / Intra-RAT MLB PDF summary — SN-1 to SN-11"
+    wb.properties.version = "2.0"
     wb.save(OUT)
     print("Wrote", OUT)
 
