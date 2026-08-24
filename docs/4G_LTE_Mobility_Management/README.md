@@ -10,36 +10,57 @@ Exclusive Excel summary of the three Huawei feature-parameter documents. No load
 python3 tools/build_mobility_workbook.py
 ```
 
-## Format (attached Excel sample)
+## How to read it
 
-| Element | Background | Text |
-|---|---|---|
-| Title bar (row 1, A–F) | Dark blue `#005596` | White, bold, centered |
-| Section header | Yellow `#FFFF00` | Bold green `#008000` |
-| Table header | Light blue `#DDEBF7` | Black, bold |
-| Data rows | Light grey `#F2F2F2` | Black |
-
-Six columns A–F. White spacer rows. Calibri. Gridlines on.
-
-Each feature follows SN-1 to SN-11 from the original template, grouped as:
-
-1. Feature Introduction  
-2. Triggering Conditions  
-3. eNodeB Actions  
-4. Prerequisites  
-5. Mutual impact and related features  
-6. License  
-7. All parameter list  
-8. Final MML (sequence)
-
-## Sheets
+1. Open **Mobility Management** (cover). Click a feature name to jump to that sheet.
+2. Each feature sheet is **SN-1 to SN-11** in connected order, matching the original template.
+3. Click an SN number in the SN list to jump to that section.
+4. Column **H** is Chart / Doc Ref on the right of every SN.
+5. Use the Excel outline (+/−) at the left of each SN header to collapse a section.
 
 | Sheet | Source PDF |
 |---|---|
-| Mobility Management | Cover / how the three books fit |
+| Mobility Management | Cover / folder / how the three books fit |
 | Idle Mode Management | Idle Mode Management, eRAN21.1, Issue 04 |
 | Connected Mode | Mobility Management in Connected Mode, eRAN21.1, Issue 08 |
 | Intra-RAT MLB | Intra-RAT Mobility Load Balancing, eRAN21.1, Issue 10 |
+
+## SN list (every feature)
+
+| SN | Item |
+|---|---|
+| 1 | Working Principal (activities in connected sequence + process chart) |
+| 2 | Major highlighted Point |
+| 3 | Benefit and Limitations |
+| 4 | Selection criteria / Trigger |
+| 5 | Activation parameter / Switch (table: value + Conditional Parameter) |
+| 6 | Prerequisite (table) |
+| 7 | Mutually impacted (table) |
+| 8 | Relation with Other Feature |
+| 9 | License |
+| 10 | All Parameter List (sequence; Conditional Parameter = relation with other feature) |
+| 11 | Final MML (sequence) |
+
+SN-11 columns A–G are exactly:
+
+`Parameter Sequence | MO | Activation Value | Conditional Parameter | Remarks | Parameter Description | More Notes`
+
+Column H is Chart / Doc Ref.
+
+## Format (operator Excel sample)
+
+| Element | Background | Text |
+|---|---|---|
+| Title bar (row 1, A–H) | Dark blue `#005596` | White, bold, centered |
+| Colour key (row 2) | Mixed | Label of each colour |
+| SN number (column A of SN header) | Dark blue `#005596` | White, bold |
+| SN title | Yellow `#FFFF00` | Bold green `#008000` |
+| Table header | Light blue `#DDEBF7` | Black, bold |
+| Data rows | Light grey `#F2F2F2` | Black |
+| MAJOR badge | Green / light yellow `#FFF2CC` | Bold green |
+| Process chart boxes | Dark blue | White |
+
+Eight columns A–H. White spacer rows. Calibri. Gridlines on. Landscape A3.
 
 The original CSV sample MML (`SymbolShutdownSwitch`) is Symbol Power Saving and is not used.
 
