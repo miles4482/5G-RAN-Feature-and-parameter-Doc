@@ -1,29 +1,19 @@
 #!/usr/bin/env python3
-"""Huawei eRAN21.1 Mobility Management — operator Excel summary.
+"""eRAN21.1 4G mobility — step-by-step Excel summary of three Huawei books.
 
-Presentation (user sample + original SN template):
-  Title:   #005596 white bold centered
-  Section: #FFFF00 bold green #008000
-  Header:  #DDEBF7 black bold
-  Data:    #F2F2F2 black
-  MAJOR:   yellow row, green bold
-  Flow:    dark-blue boxes, white text
-  Last column = Chart / Doc Ref (right side of every SN)
-
-Sheets:
-  Mobility Management | Idle Mode Management | Connected Mode | Intra-RAT MLB
+Not the user SN sample. Organised as one synchronised chain, then each
+feature in procedure order: Idle → Connected → Intra-RAT MLB → activation.
 """
 
 import os
-import re
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.hyperlink import Hyperlink
 from openpyxl.worksheet.page import PageMargins
 
-OUT = "/workspace/docs/4G_LTE_Mobility_Management/4G_LTE_Mobility_Management_eRAN21.1_v2.0.xlsx"
-COLS = 8
+OUT = "/workspace/docs/4G_LTE_Mobility_Management/4G_LTE_Mobility_Management_eRAN21.1_v3.0.xlsx"
+COLS = 6
 
 BLUE = "005596"
 YELLOW = "FFFF00"
@@ -42,10 +32,17 @@ thin = Border(
     top=Side(style="thin", color=GRID),
     bottom=Side(style="thin", color=GRID),
 )
-L = Alignment(wrap_text=True, vertical="center", horizontal="left")
 C = Alignment(wrap_text=True, vertical="center", horizontal="center")
 T = Alignment(wrap_text=True, vertical="top", horizontal="left")
 LI = Alignment(wrap_text=True, vertical="center", horizontal="left", indent=1)
+
+H_STEP = ["Step", "What happens", "MO / parameter", "Rule in the feature book", "If this is wrong", "Source"]
+H_NOTE = ["No.", "Huawei caution", "What it means in the network", "Do / do not", "Related step", "Source"]
+H_PAR = ["Order", "MO", "Parameter", "Role in the procedure", "Depends on / couples with", "Source"]
+H_MML = ["Order", "MO", "What to set (intent)", "Must already be true", "Placeholders / check", "Source"]
+H_LINK = ["Open this sheet", "Book", "Issue", "This sheet answers", "Read after", "Source"]
+
+W = [10, 32, 28, 42, 36, 22]
 
 
 def fl(h):
@@ -88,7 +85,7 @@ def widths(ws, xs):
         ws.column_dimensions[get_column_letter(i)].width = w
 
 
-def setup(ws, footer, cols=COLS, tab=BLUE):
+def setup(ws, footer, tab=BLUE):
     ws.sheet_view.showGridLines = True
     ws.page_setup.orientation = "landscape"
     ws.page_setup.paperSize = ws.PAPERSIZE_A3
@@ -96,886 +93,437 @@ def setup(ws, footer, cols=COLS, tab=BLUE):
     ws.page_setup.fitToWidth = 1
     ws.page_setup.fitToHeight = 0
     ws.page_margins = PageMargins(0.35, 0.35, 0.5, 0.45)
-    ws.oddHeader.left.text = "Mobility Management"
+    ws.oddHeader.left.text = "4G LTE Mobility Management  |  Huawei eRAN21.1  |  v3.0"
     ws.oddFooter.left.text = footer
-    ws.oddFooter.right.text = "Huawei eRAN21.1  |  Page &P of &N"
+    ws.oddFooter.right.text = "Page &P of &N"
     ws.sheet_properties.tabColor = tab
     ws.freeze_panes = "A3"
-    ws.page_setup.horizontalCentered = False
-    ws.print_title_rows = "1:2"
+    ws.print_title_rows = "1:1"
     ws.sheet_format.defaultRowHeight = 18
-    ws.sheet_properties.outlinePr.summaryBelow = False
-    ws.sheet_view.showOutlineSymbols = True
-    ws.page_setup.paperSize = ws.PAPERSIZE_A3
 
 
-def title(ws, r, cols, text):
-    merge(ws, r, 1, cols, text, size=16, bold=True, color=WHITE, bg=BLUE, align=C, h=32)
+def title(ws, r, text):
+    merge(ws, r, 1, COLS, text, size=16, bold=True, color=WHITE, bg=BLUE, align=C, h=30)
     return r + 1
 
 
-def spacer(ws, r, cols=COLS, h=8):
-    for c in range(1, cols + 1):
+def spacer(ws, r, h=8):
+    for c in range(1, COLS + 1):
         put(ws, r, c, "", bg=WHITE, h=h)
     return r + 1
 
 
-def legend_row(ws, r, cols=COLS):
-    keys = [
-        (BLUE, WHITE, "Title"),
-        (YELLOW, GREEN, "SN-1 to SN-11"),
-        (HDR, BLACK, "Table header"),
-        (GREY, BLACK, "Data row"),
-        (MAJOR_BG, GREEN, "MAJOR note"),
-        (ARROW, WHITE, "Process chart"),
-        (WHITE, BLUE, "Col H = Chart / Doc Ref"),
-        (WHITE, BLACK, "Click SN index to jump"),
-    ]
-    for c, (bg, fg, lab) in enumerate(keys, 1):
-        put(ws, r, c, lab, size=8, bold=True, color=fg, bg=bg, align=C, h=18)
+def section(ws, r, text):
+    merge(ws, r, 1, COLS, "  " + text, size=12, bold=True, color=GREEN, bg=YELLOW, align=LI, h=22)
     return r + 1
 
 
-def section(ws, r, cols, text):
-    m = re.match(r"(SN-\d+)\s+(.*)", text.strip())
-    if m:
-        put(ws, r, 1, m.group(1), size=12, bold=True, color=WHITE, bg=BLUE, align=C, h=24)
-        merge(ws, r, 2, cols, "  " + m.group(2), size=12, bold=True, color=GREEN, bg=YELLOW, align=LI, h=24)
-    else:
-        merge(ws, r, 1, cols, "  " + text, size=12, bold=True, color=GREEN, bg=YELLOW, align=LI, h=22)
+def major(ws, r, text):
+    put(ws, r, 1, "NOTE", size=9, bold=True, color=WHITE, bg=GREEN, align=C, h=22)
+    merge(ws, r, 2, COLS, "  " + text, size=10, bold=True, color=GREEN, bg=MAJOR_BG, align=LI, h=22)
     return r + 1
 
 
-def major(ws, r, cols, text):
-    put(ws, r, 1, "MAJOR", size=9, bold=True, color=WHITE, bg=GREEN, align=C, h=22)
-    merge(ws, r, 2, cols, "  " + text, size=10, bold=True, color=GREEN, bg=MAJOR_BG, align=LI, h=22)
+def note(ws, r, text):
+    merge(ws, r, 1, COLS, "  " + text, size=9, bold=False, color=BLUE, bg=WHITE, align=LI, h=20)
     return r + 1
 
 
-def pad8_heads(names):
-    names = list(names)
-    if len(names) >= COLS:
-        return names[:COLS]
-    if names and str(names[-1]).startswith("Chart"):
-        names = names[:-1] + ["More Notes", names[-1]]
-        return names[:COLS]
-    while len(names) < COLS - 1:
-        names.append("")
-    names.append("Chart / Doc Ref")
-    return names[:COLS]
-
-
-def pad8(values, mml=False):
-    v = list(values)
-    if mml:
-        while len(v) < 7:
-            v.append("")
-        if len(v) == 7:
-            v.append("MML sequence")
-        return v[:COLS]
-    if len(v) == 7:
-        return v[:6] + ["", v[6]]
-    while len(v) < COLS:
-        v.append("")
-    return v[:COLS]
-
-
-def auto_h(values, min_h=22, max_h=78):
-    longest = 0
+def auto_h(values):
+    longest = 1
     for i, v in enumerate(values):
         s = "" if v is None else str(v)
-        # wider MML / description columns wrap ~42 chars
-        width = 18 if i <= 1 else 42
-        lines = max(1, (len(s) + width - 1) // width)
-        n = s.count("\n") + 1
-        longest = max(longest, lines, n)
-    return min(max_h, max(min_h, 16 + longest * 12))
+        width = 16 if i == 0 else 40
+        longest = max(longest, (len(s) + width - 1) // width, s.count("\n") + 1)
+    return min(72, max(22, 14 + longest * 12))
 
 
-def heads(ws, r, names, cols=COLS):
-    names = pad8_heads(names)
-    for c in range(1, cols + 1):
-        n = names[c - 1] if c <= len(names) else ""
-        put(ws, r, c, n, size=9, bold=True, color=BLACK, bg=HDR, align=C, h=22)
+def heads(ws, r, names):
+    names = list(names) + [""] * COLS
+    for c in range(1, COLS + 1):
+        put(ws, r, c, names[c - 1], size=9, bold=True, color=BLACK, bg=HDR, align=C, h=20)
     return r + 1
 
 
-def rec(ws, r, values, h=None, mml=False, cols=COLS):
-    values = pad8(values, mml=mml)
-    computed = auto_h(values, min_h=26 if mml else 22, max_h=96 if mml else 72)
-    h = max(h or 0, computed)
-    for c in range(1, cols + 1):
-        v = values[c - 1] if c <= len(values) else ""
-        put(ws, r, c, v, size=9 if mml and c == 3 else 10, bg=GREY, align=T, h=h)
+def rec(ws, r, values):
+    values = list(values) + [""] * COLS
+    h = auto_h(values[:COLS])
+    for c in range(1, COLS + 1):
+        put(ws, r, c, values[c - 1], size=10, bg=GREY, align=T, h=h)
     return r + 1
 
 
-def _is_ref(s):
-    s = str(s)
-    return s.startswith(("Fig", "Doc", "IM ", "MLB", "CM ", "pp.", "§", "Table", "Ch.")) or s in ("MML", "Right column")
-
-
-def flow(ws, r, cols, boxes):
-    """Process chart: box → box → box, then ↓ to the next row. Last token can be a doc ref."""
+def flow(ws, r, boxes, ref=""):
+    """Three process boxes per row: box → box → box."""
     steps = list(boxes)
-    ref = ""
-    if steps and _is_ref(steps[-1]):
-        ref = steps.pop()
-    box_spans = [(1, 2), (4, 5), (7, 8)]
-    arrow_cols = [3, 6]
+    box_cols = [1, 3, 5]
+    arr_cols = [2, 4]
     i = 0
     while i < len(steps):
         chunk = steps[i:i + 3]
-        for c in range(1, cols + 1):
-            put(ws, r, c, "", bg=WHITE, h=30)
+        for c in range(1, COLS + 1):
+            put(ws, r, c, "", bg=WHITE, h=28)
         for j, step in enumerate(chunk):
-            c1, c2 = box_spans[j]
-            merge(ws, r, c1, c2, step, size=9, bold=True, color=WHITE, bg=BLUE, align=C, h=30)
+            put(ws, r, box_cols[j], step, size=9, bold=True, color=WHITE, bg=BLUE, align=C, h=28)
             if j < len(chunk) - 1:
-                put(ws, r, arrow_cols[j], "→", size=16, bold=True, color=GREEN, bg=WHITE, align=C, h=30)
+                put(ws, r, arr_cols[j], "→", size=16, bold=True, color=GREEN, bg=WHITE, align=C, h=28)
         r += 1
         i += 3
         if i < len(steps):
-            for c in range(1, cols + 1):
-                put(ws, r, c, "", bg=WHITE, h=14)
-            merge(ws, r, 1, cols, "↓", size=14, bold=True, color=GREEN, bg=WHITE, align=C, h=14)
+            for c in range(1, COLS + 1):
+                put(ws, r, c, "", bg=WHITE, h=12)
+            merge(ws, r, 1, COLS, "↓", size=12, bold=True, color=GREEN, bg=WHITE, align=C, h=12)
             r += 1
     if ref:
-        merge(ws, r, 1, cols, "  Chart / Doc Ref (right side of SN):  " + ref, size=9, bold=True, color=BLUE, bg=HDR, align=LI, h=18)
-        r += 1
+        r = note(ws, r, "Document chart: " + ref)
     return r
 
 
-def arrow_row(ws, r, cols, n_boxes):
-    for i in range(cols):
-        if i < n_boxes - 1:
-            put(ws, r, i + 1, "↓  next", size=8, bold=True, color=GREEN, bg=WHITE, align=C, h=14)
-        else:
-            put(ws, r, i + 1, "", bg=WHITE, h=14)
-    return r + 1
-
-
-def link_cell(cell, target, sheet):
-    loc = f"'{sheet}'!{target}"
-    cell.hyperlink = Hyperlink(ref=cell.coordinate, location=loc, display=str(cell.value) if cell.value else loc)
+def link_cell(cell, sheet, target="A1"):
+    cell.hyperlink = Hyperlink(ref=cell.coordinate, location=f"'{sheet}'!{target}", display=str(cell.value or ""))
     cell.font = ft(10, True, "0563C1", underline="single")
     cell.alignment = T
 
 
-# Shared 8-col header sets. Column H is always Chart / Doc Ref.
-H_SN = ["SN", "RAT", "Item Name", "What the document says", "Conditional / switch to enable", "Notes / Rationale", "More Notes", "Chart / Doc Ref"]
-H_STEP = ["Step", "RAT", "Activity (connected order)", "MO / Parameter", "Document value / rule", "Notes / Rationale", "More Notes", "Chart / Doc Ref"]
-H_ACT = ["Seq", "RAT", "MO", "Parameter / Switch", "Document value", "Conditional Parameter (must enable first)", "Notes", "Chart / Doc Ref"]
-H_PRE = ["Seq", "RAT", "MO / Check", "Parameter / Switch", "Document value", "If missing, what fails", "Notes", "Chart / Doc Ref"]
-H_IMP = ["Seq", "RAT", "This function", "Impacts / couples with", "Document rule", "Conditional Parameter / related feature", "Notes", "Chart / Doc Ref"]
-H_PAR = ["Seq", "RAT", "MO", "Parameter Name", "Parameter description", "Document value / Conditional Parameter", "Notes", "Chart / Doc Ref"]
-H_MML = ["Parameter Sequence", "MO", "Activation Value", "Conditional Parameter", "Remarks", "Parameter Description", "More Notes", "Chart / Doc Ref"]
-
-DEFAULT_WIDTHS = [12, 14, 34, 36, 28, 32, 26, 26]
-
-
-def build_sheet(wb, name, title_text, blocks, w=None, tab=BLUE):
+def build_sheet(wb, name, title_text, blocks, tab=BLUE):
     ws = wb.create_sheet(name)
-    cols = COLS
-    widths(ws, w or DEFAULT_WIDTHS)
-    setup(ws, title_text, cols, tab=tab)
+    widths(ws, W)
+    setup(ws, title_text, tab=tab)
     r = 1
-    r = title(ws, r, cols, title_text)
-    r = legend_row(ws, r, cols)
-    r = spacer(ws, r, cols, 6)
-
-    bookmarks = {}
-    index_rows = []
-    sn_starts = []
-    in_index = False
-    in_mml = False
-
+    r = title(ws, r, title_text)
+    r = spacer(ws, r, 6)
     for b in blocks:
         kind = b[0]
         if kind == "section":
-            in_index = "SN list" in b[1]
-            in_mml = b[1].strip().startswith("SN-11") or "Final MML" in b[1]
-            m = re.match(r"SN-(\d+)", b[1].strip())
-            r = section(ws, r, cols, b[1])
-            if m:
-                bookmarks[m.group(1)] = r - 1
-                sn_starts.append(r - 1)
+            r = section(ws, r, b[1])
         elif kind == "major":
-            r = major(ws, r, cols, b[1])
-        elif kind == "flow":
-            r = flow(ws, r, cols, b[1])
-        elif kind == "arrows":
-            r = arrow_row(ws, r, cols, b[1])
-        elif kind == "heads":
-            r = heads(ws, r, b[1], cols)
-        elif kind == "row":
-            if in_index:
-                index_rows.append((r, str(b[1][0])))
-            r = rec(ws, r, b[1], h=b[2] if len(b) > 2 else None, mml=in_mml)
-        elif kind == "space":
-            r = spacer(ws, r, cols, b[1] if len(b) > 1 else 8)
+            r = major(ws, r, b[1])
         elif kind == "note":
-            merge(ws, r, 1, cols, "  " + b[1], size=9, bold=False, color=BLUE, bg=WHITE, align=LI, h=20)
+            r = note(ws, r, b[1])
+        elif kind == "flow":
+            r = flow(ws, r, b[1], b[2] if len(b) > 2 else "")
+        elif kind == "heads":
+            r = heads(ws, r, b[1])
+        elif kind == "row":
+            rec(ws, r, b[1])
+            if len(b) > 2:
+                link_cell(ws.cell(r, 1), b[2])
             r += 1
-        elif kind == "links":
-            r = heads(ws, r, ["Open sheet", "RAT", "Feature", "What you will find", "SN structure", "How to use", "More Notes", "Chart / Doc Ref"])
-            for item in b[1]:
-                rec(ws, r, item, h=24)
-                link_cell(ws.cell(r, 1), "A1", item[0])
-                r += 1
-
-    for ir, sn in index_rows:
-        if sn in bookmarks:
-            target = f"A{bookmarks[sn]}"
-            for col in (1, 3):
-                link_cell(ws.cell(ir, col), target, name)
-
-    if sn_starts:
-        ends = sn_starts[1:] + [ws.max_row + 1]
-        for start, end in zip(sn_starts, ends):
-            if end - 1 > start:
-                ws.row_dimensions.group(start + 1, end - 1, hidden=False, outline_level=1)
+        elif kind == "space":
+            r = spacer(ws, r, b[1] if len(b) > 1 else 8)
     return ws
 
 
-# ===========================================================================
-# COVER
-# ===========================================================================
-def cover_blocks():
+def overview():
     return [
-        ("section", "Folder  —  Mobility Management"),
-        ("note", "Open a feature sheet below. Each feature is SN-1 to SN-11 in connected order. Column H is Chart / Doc Ref on the right of every SN. Click an SN number on a feature sheet to jump to that section."),
-        ("links", [
-            ["Idle Mode Management", "LTE", "Feature 1", "Cell selection, reselection, SIB3/SIB5, dedicated priority, idle MLB interface", "SN-1 to SN-11", "Start here for camping / next RRC cell", "—", "Fig 4-1, Fig 5-1"],
-            ["Connected Mode", "LTE", "Feature 2", "A1–A5, coverage HO, frequency-priority HO, measurement, admission", "SN-1 to SN-11", "HO engine. MLB algorithm is not in this book.", "—", "Fig 4-1, Fig 11-1/11-2"],
-            ["Intra-RAT MLB", "LTE", "Feature 3", "Idle dedicated-priority transfer and connected load HO (equalisation / offload)", "SN-1 to SN-11", "Who/when to move for load. Uses Connected Mode A4/A5.", "—", "Fig 3-1, Fig 4-1 to 4-5"],
-        ]),
+        ("section", "What this file is"),
+        ("note", "Step-by-step summary of three Huawei eRAN21.1 feature-parameter books. One mobility chain. Not a copy of any sample template. Values in MML examples in the books are examples, not live design."),
+        ("space", 6),
+        ("heads", ["Book", "Document", "Issue / date", "Owns in the chain", "Does not own", "Read as"]),
+        ("row", ["Idle Mode Management", "Idle Mode Management Feature Parameter Description", "eRAN21.1 Issue 04, 2026-05-30",
+                 "Where the UE camps. Next RRC setup cell. Dedicated priority at release.", "Connected HO events. Load algorithm.", "Sheet 2"]),
+        ("row", ["Connected Mode", "Mobility Management in Connected Mode Feature Parameter Description", "eRAN21.1 Issue 08, 2026-06-30",
+                 "Measurement and HO engine (A1–A5). Coverage first. Frequency-priority steering.", "Who to move for load. Load = N/C.", "Sheet 3"]),
+        ("row", ["Intra-RAT MLB", "Intra-RAT Mobility Load Balancing Feature Parameter Description", "eRAN21.1 Issue 10, 2026-06-30",
+                 "When a cell is overloaded. Which UEs. Idle dedicated-priority transfer or connected load HO.", "RF plan. Coverage A2 family design.", "Sheet 4"]),
         ("space", 8),
-        ("section", "Introduction"),
-        ("note", "Feature details and MAJOR notes are highlighted in yellow/green. Last column (H) is Chart / Doc Ref (right side of SN), as required in the original template. One idea per row."),
+        ("section", "How the three books fit (one chain)"),
+        ("flow", ["Idle: camp / reselect", "RRC connect", "Coverage A2/A5 protect", "FreqPri A1/A4 steer", "MLB load HO / idle release", "Back to idle (T320)"],
+         "Idle Fig 5-1  →  Connected Fig 4-1  →  MLB Fig 3-1"),
+        ("major", "Idle decides the next access layer. Connected executes measurement and handover. MLB only decides who and when to move for load. Frequency-priority HO is not the MLB algorithm."),
+        ("major", "Necessary coverage HO preempts load / optimisation HO. Do not use connected frequency-priority as a substitute for Intra-RAT MLB."),
         ("space", 8),
-        ("heads", ["Topic", "RAT", "Feature Part", "Document", "Issue / date", "What this book covers", "Chart / Doc Ref"]),
-        ("row", ["Feature 1", "LTE", "Idle Mode Management", "Idle Mode Management Feature Parameter Description", "eRAN21.1 Issue 04, 2026-05-30",
-                 "Cell selection, reselection, dedicated priority, SIB3/SIB5, idle MLB interface", "Fig 4-1, Fig 5-1"]),
-        ("row", ["Feature 2", "LTE", "Mobility Management in Connected Mode", "Mobility Management in Connected Mode Feature Parameter Description", "eRAN21.1 Issue 08, 2026-06-30",
-                 "A1/A2/A3/A4/A5, coverage HO, frequency-priority HO, measurement, admission", "Fig 4-1, Fig 11-1/11-2"]),
-        ("row", ["Feature 3", "LTE", "Intra-RAT Mobility Load Balancing", "Intra-RAT Mobility Load Balancing Feature Parameter Description", "eRAN21.1 Issue 10, 2026-06-30",
-                 "Idle dedicated-priority transfer and connected load HO (equalisation / offload)", "Fig 3-1, Fig 4-1 to 4-5"]),
-        ("space", 10),
-        ("major", "These three documents are one mobility chain. Idle decides the next access cell. Connected Mode executes measurement and HO. MLB decides which UEs move for load. Frequency-priority HO is not the MLB algorithm."),
-        ("major", "The sample MML row ENodeBAlgoSwitch / SymbolShutdownSwitch in the original CSV is Symbol Power Saving. It is not a mobility parameter and is not used here."),
-        ("space", 10),
-        ("section", "How the three features connect (sequence)"),
-        ("flow", ["1 Idle camp / reselect", "2 RRC connect", "3 Coverage A2/A5 protect", "4 FreqPri A1/A4 steer", "5 MLB load HO / idle release", "6 Next idle (T320)", "Doc chain"]),
+        ("section", "Open the sheets in this order"),
+        ("heads", H_LINK),
+        ("row", ["1. End-to-end chain", "All three", "—", "The full sequence from power-on to the next idle camp", "Start here", "This file"], "1. End-to-end chain"),
+        ("row", ["2. Idle Mode", "Idle Mode Management", "Issue 04", "Selection, SIB, reselection, dedicated priority", "After the chain", "Idle book"], "2. Idle Mode"),
+        ("row", ["3. Connected Mode", "Connected Mode", "Issue 08", "A1–A5, coverage HO, frequency-priority HO", "After Idle", "Connected book"], "3. Connected Mode"),
+        ("row", ["4. Intra-RAT MLB", "Intra-RAT MLB", "Issue 10", "Load model, trigger, UE pick, A4/A5 or idle release", "After Connected", "MLB book"], "4. Intra-RAT MLB"),
+        ("row", ["5. Activation order", "All three", "—", "One MML sequence across Idle + Connected + MLB", "Last", "MAE / parameter reference"], "5. Activation order"),
         ("space", 8),
-        ("heads", ["Step", "RAT", "Activity (connected order)", "Document", "Trigger", "Notes / Rationale", "Chart / Doc Ref"]),
-        ("row", ["1", "LTE", "Idle selection and reselection", "Idle Mode Management", "Power-on, release, SI", "Sets the cell of the next RRC setup", "Fig 5-1"]),
-        ("row", ["2", "LTE", "Enter RRC_CONNECTED", "Connected Mode", "Service request", "Dedicated idle priorities are discarded", "IM §5.1.3.1"]),
-        ("row", ["3", "LTE", "Coverage mobility", "Connected Mode", "Event A2", "Necessary HO. Preempts load HO.", "Table 4-5, Fig 5-3"]),
-        ("row", ["4", "LTE", "Frequency-priority HO", "Connected Mode Ch.11", "A1 / A4 when serving is good", "Puts service on high band; keeps low band for coverage", "Fig 11-1/11-2"]),
-        ("row", ["5", "LTE", "Intra-RAT MLB", "MLB book", "UE-number or PRB threshold", "HO cause Reduce Load in Serving Cell, or idle dedicated priority", "Fig 3-1"]),
-        ("row", ["6", "LTE", "Return to idle", "Idle + MLB", "RRC release + T320", "Idle MLB can steer the next camp", "MLB §5.1.1.5"]),
-        ("space", 10),
-        ("section", "Original template SN list  (every feature sheet follows this order)"),
-        ("heads", H_SN),
-        ("row", ["1", "LTE", "Working Principal", "Mechanism in connected order", "—", "Must include chart from doc on the right", "Right column"]),
-        ("row", ["2", "LTE", "Major highlighted Point", "Huawei cautions and recommended settings", "—", "Highlighted MAJOR rows", "Right column"]),
-        ("row", ["3", "LTE", "Benefit and Limitations", "What the feature gives and where it fails", "—", "Table", "Right column"]),
-        ("row", ["4", "LTE", "Selection criteria / Trigger", "UE pick, event, threshold", "—", "Table", "Right column"]),
-        ("row", ["5", "LTE", "Activation parameter / Switch", "Core switch + description + value + conditional parameter", "Conditional = what must be ON to enable the main switch", "Must be a table", "Right column"]),
-        ("row", ["6", "LTE", "Prerequisite functions", "Parameter / Switch + description + value + notes", "Table", "Must be a table", "Right column"]),
-        ("row", ["7", "LTE", "Mutually impacted", "Parameter setting + description + value", "Table", "Must be a table", "Right column"]),
-        ("row", ["8", "LTE", "Relation with Other Feature", "Idle / Connected / MLB / CA / ES", "—", "—", "Right column"]),
-        ("row", ["9", "LTE", "License Requirements", "Function to license mapping", "Verify in MAE", "Feature books point to license file", "Right column"]),
-        ("row", ["10", "LTE", "All Parameter List", "Sequence / connected order", "Conditional Parameter = relation with other feature", "Must be a table", "Right column"]),
-        ("row", ["11", "LTE", "Final MML Command", "Parameter Sequence, MO, Activation Value, Conditional Parameter, Remarks, Parameter Description, More Notes", "Maintain sequence", "Placeholders LocalCellId / DlEarfcn", "Right column"]),
+        ("section", "What is not in this file"),
+        ("row", ["1", "No AI / daily-KPI / change-request agent", "—", "Feature-book summary only", "—", "—"]),
+        ("row", ["2", "No operator-specific band priority table", "—", "Huawei says capacity/hotspot above coverage layer. Exact priority numbers are a design, not a book default.", "Idle + MLB", "MLB §5.1.2.1"]),
+        ("row", ["3", "No full default/range list", "—", "MLB Ch.8 points to the version-matched parameter reference.", "Activation sheet", "MLB p.299"]),
+        ("row", ["4", "MML uses LocalCellId=<x> and DlEarfcn=<earfcn>", "—", "Confirm enum names and syntax on the NE in MAE-Access.", "Sheet 5", "MAE"]),
     ]
 
 
-# ===========================================================================
-# IDLE
-# ===========================================================================
-def idle_blocks():
+def chain():
     return [
-        ("section", "Process chart from document  (right-side chart for SN-1)"),
-        ("flow", ["PLMN select", "Criterion S", "Camp + read SI", "Measure", "Reselect", "RRC on camped cell", "Fig 5-1"]),
-        ("note", "Idle Mode Management Fig 4-1 (idle functions) and Fig 5-1 (selection/reselection sequence). A sequence is a set of things that come one after another in connected order."),
+        ("section", "Read this as one procedure"),
+        ("note", "Each row is the next thing that happens to a UE. The Book column tells you which feature document owns that step. Open sheets 2–4 for the detail of that step."),
+        ("flow", ["Power-on / idle", "Camped cell → RRC", "Protect coverage", "Steer to high band", "Balance load", "Release → next idle"],
+         "Synchronised chain of the three books"),
+        ("space", 6),
+        ("heads", ["Step", "What happens", "Which book", "Trigger", "What the eNodeB / UE does", "Go to"]),
+        ("row", ["1", "PLMN selection then cell selection", "Idle", "Power-on, recovery, or no stored cell", "Criterion S: Srxlev > 0 (and Squal if QQualMin is set). This is a floor, not a load knob.", "Sheet 2 step 1–3"]),
+        ("row", ["2", "UE camps and reads system information", "Idle", "Suitable cell found", "SIB1 (80 ms). SIB3 = intra + serving priority. SIB5 = inter-frequency priority, thresholds, neighbour list.", "Sheet 2 step 4"]),
+        ("row", ["3", "Idle measurement and reselection", "Idle", "Always for higher-priority freqs; equal/lower after search threshold", "Higher: ThreshXhigh. Equal: ranking Rn/Rs. Lower: ThrshServLow and ThreshXlow. Timers must persist.", "Sheet 2 step 5–9"]),
+        ("row", ["4", "RRC setup on the camped cell", "Idle → Connected", "Service request", "Dedicated idle priorities are discarded when the UE enters connected. The camped cell is the serving cell of this session.", "Idle §5.1.3.1"]),
+        ("row", ["5", "Classify the HO function", "Connected", "Coverage / service / quality / FreqPri / MLB", "Necessary coverage HO has higher priority than unnecessary load or optimisation HO.", "Connected Table 4-5"]),
+        ("row", ["6", "Deliver measurement (or blind only if containment is known)", "Connected", "HO function started", "FREQ_MEAS_FLAG, not forbid-meas, object-count limits. Equal-priority objects may be picked at random if over cap — that is not load balance.", "Connected Fig 4-1"]),
+        ("row", ["7", "Coverage protection", "Connected", "Serving crosses A2", "A1 stops coverage meas. A3 relative / A4 target good enough / A5 serving poor AND target good. RSRP is the recommended quantity.", "Sheet 3"]),
+        ("row", ["8", "Frequency-priority HO (optional)", "Connected Ch.11", "Serving is good enough (A1) and a high-priority frequency is usable (A4)", "Puts service on high band and keeps low band for coverage. A frequency that is a FreqPri target must not have a reverse MLB-target pair.", "Fig 11-1 / 11-2"]),
+        ("row", ["9", "MLB evaluates load", "MLB", "Periodic eval", "User-number load = N/C. Difference = (Load_s − Load_t) / Load_s. Use ActiveUe + SpectralEff when bandwidth or SE differ.", "Sheet 4"]),
+        ("row", ["10", "MLB trigger and target admit", "MLB", "N ≥ thd+offset for the judge period (or PRB path)", "Target must pass NoHoFlag, overlap, MLB target indication, HO success, Low/Med HW+transport.", "MLB pp.27–29"]),
+        ("row", ["11", "MLB picks UEs and volume", "MLB", "After admit", "ONLY_STRONGEST_CELL is recommended. Cap volume (do not use 5 s eval with MlbMaxUeNum ≥ 40).", "Table 6-5, p.136"]),
+        ("row", ["12", "Connected load HO executes", "MLB + Connected", "UE selected", "FDD: measurement-based HO, event A4 (or A5 if licensed non-cosited). Cause: Reduce Load in Serving Cell.", "MLB §6.1.1.5.2"]),
+        ("row", ["13", "Idle load transfer at release", "MLB + Idle", "Idle MLB trigger", "RRC release with dedicated reselection priority and T320. Class order: NG-RAN > E-UTRAN low-load > E-UTRAN high-load > UTRAN > GERAN.", "MLB §5.1.1.5"]),
+        ("row", ["14", "Back to idle / next session", "Idle", "Release, T320 expiry, or next RRC", "Dedicated priorities last until T320, next RRC, or PLMN select. SI change is not instant — wait the next SI modification period.", "Idle §7.1.3"]),
         ("space", 8),
-        ("section", "SN list"),
-        ("heads", H_SN),
-        ("row", ["1", "LTE", "Working Principal", "Selection → SI → measurement → reselection → dedicated priority at release", "SIB3/SIB5 must be complete", "See SN-1 steps below", "Fig 4-1, Fig 5-1"]),
-        ("row", ["2", "LTE", "Major highlighted Point", "Priority is per frequency; SI is delayed; UNDELIVER blocks idle MLB", "CfgInd=CFG required", "See MAJOR rows", "§5.1.3, §7.1.3"]),
-        ("row", ["3", "LTE", "Benefit and Limitations", "Low signalling vs connected HO; not real-time", "T320 / next RRC ends dedicated prio", "See SN-3 table", "MLB §4.3"]),
-        ("row", ["4", "LTE", "Selection criteria / Trigger", "Criterion S, ThreshXhigh/low, ranking, idle MLB thd", "Timers must persist", "See SN-4 table", "Tables 5-1 to 5-4"]),
-        ("row", ["5", "LTE", "Activation parameter / Switch", "Priority, search CFG, idle MLB bit, T320, MlbTargetInd", "License + SIB5", "See SN-5 table", "§5.3.2.3"]),
-        ("row", ["6", "LTE", "Prerequisite functions", "SIB5 list, neighbor 16-cap, SI BER, UE capability", "—", "See SN-6 table", "§5.1.3.4, §5.3.4"]),
-        ("row", ["7", "LTE", "Mutually impacted", "Connected MLB, CA PCC, RSRQ, energy saving, fixed-proportion idle", "Do not combine forbidden pairs", "See SN-7 table", "MLB §5.4.2.2"]),
-        ("row", ["8", "LTE", "Relation with Other Feature", "MLB idle method; Connected discards dedicated prio; CA; ES; GERAN/UTRAN class", "—", "See SN-8 table", "§5.1.3.1"]),
-        ("row", ["9", "LTE", "License Requirements", "Basic idle vs Intra-RAT MLB vs blind vs enhanced dedi-prio", "Check MAE", "See SN-9 table", "License file"]),
-        ("row", ["10", "LTE", "All Parameter List", "Suitability → priority → meas → reselection → idle MLB", "Conditional = other-feature relation", "See SN-10 table", "Connected order"]),
-        ("row", ["11", "LTE", "Final MML Command", "LST → priority/search → SIB5 → thresholds → MlbTargetInd → idle switch → T320 → verify", "Maintain sequence", "See SN-11 table", "MML"]),
-        ("space", 10),
-
-        ("section", "SN-1  Working Principal  (connected order)"),
-        ("heads", H_STEP),
-        ("row", ["1", "LTE", "PLMN selection", "NAS / PLMN", "Before cell selection", "Not controlled by SIB reselection priority", "Fig 5-1"]),
-        ("row", ["2", "LTE", "Initial / stored / release-directed cell selection", "CELLSEL ; RRCConnectionRelease redirected frequency", "Last camped cell, stored info, or strongest cell per band", "SIB priority does not fully control first camp after power-up", "§5.1.2 pp.15–16"]),
-        ("row", ["3", "LTE", "Criterion S (suitable cell)", "QRxLevMin, QQualMin, UePowerMax / PMax",
-                 "Srxlev = Qrxlevmeas−(Qrxlevmin+offset)−Pcompensation > 0; Squal>0 if QQualMin set",
-                 "If QQualMin is 0/absent, RSRP-only. This is a floor, not a load knob.", "§5.1.2"]),
-        ("row", ["4", "LTE", "Camp and read system information", "SIB1 / SIB3 / SIB4 / SIB5", "SIB3 intra + serving prio; SIB5 inter-freq prio, thd, offset, neighbor list", "SIB1 period 80 ms. Other SIB periods configurable.", "Table 7-1"]),
-        ("row", ["5", "LTE", "Intra-frequency measurement", "SIntraSearch / SIntraSearchQ", "Measure unless Srxlev>SIntraSearchP and Squal>SIntraSearchQ", "Huawei: set CfgInd=CFG to avoid always-on intra meas.", "§5.1.3.3"]),
-        ("row", ["6", "LTE", "Inter-frequency measurement", "SNonIntraSearch ; CellReselPriority", "Higher-priority freq: always measured. Equal/lower: only after search threshold", "Thresholds do not stop high-priority search.", "§5.1.3.3"]),
-        ("row", ["7", "LTE", "Reselection to higher-priority frequency", "ThreshXhigh / ThreshXhighQ / EutranReselTime", "Camped >1 s AND target S > high thd for the timer", "Tables 5-1 / 5-2", "pp.29–32"]),
-        ("row", ["8", "LTE", "Reselection to equal-priority frequency", "Qhyst, QoffsetFreq, CellQoffset", "Rn = Qmeas,n − Qoffset ; Rs = Qmeas,s + Qhyst ; Rn>Rs for the timer", "Positive target offset makes reselection harder.", "§5.1.3.4"]),
-        ("row", ["9", "LTE", "Reselection to lower-priority frequency", "ThrshServLow / ThreshXlow (+ Q forms)", "No higher target AND serving S < serving-low AND target S > X-low", "Tables 5-3 / 5-4", "pp.33–35"]),
-        ("row", ["10", "LTE", "Dedicated priority at RRC release (idle MLB / SPID / PCC)", "IdleModeMobilityControlInfo ; T320", "Replaces common SIB priorities until T320 / next RRC / PLMN select", "Missing serving freq in dedicated list ⇒ treated as lowest.", "§5.1.3.1"]),
-        ("row", ["11", "LTE", "Next RRC setup", "Camped cell", "UE establishes RRC on the cell where it is then camped", "Idle distribution = next access layer", "Fig 5-1"]),
-        ("space", 8),
-
-        ("section", "SN-2  Major highlighted Point"),
-        ("major", "Priority is frequency-level, not per-cell. No SIB5 priority ⇒ no reselection to that frequency. Maximum 16 non-serving E-UTRAN frequencies. [IM] §5.1.3.1"),
-        ("major", "Huawei recommends SNonIntraSearchCfgInd=CFG, SIntraSearch > SNonIntraSearch, and example SNonIntraSearch=10. [IM] §5.4.1.1 ; [MLB] §5.1.2.1"),
-        ("major", "Huawei recommends capacity/hotspot frequencies above the low-band coverage layer in broadcast reselection priority. [MLB] §5.1.2.1 pp.38–39"),
-        ("major", "MeasPerformanceDemand=UNDELIVER removes the frequency from SIB5 and it cannot be an idle-MLB target. [IM] §5.3.2.3"),
-        ("major", "SI change is not instant. Applied in the next SI modification period; otherwise after change-paging or 3 hours. SIB BER must be ≤1%. [IM] §7.1.3, §5.3.4"),
-        ("major", "Do not use the optimization-table sentence on QRxLevMinOffset. It conflicts with the Criterion-S formula. [IM] §5.1.2 vs §5.4.1.1.3"),
-        ("major", "Adaptive-proportion idle balancing is not recommended without Huawei engineering support. Fixed-proportion idle + user-number connected MLB causes ping-pong. [MLB] §5.5.2.1 p.80 ; §5.4.2.2"),
-        ("space", 8),
-
-        ("section", "SN-3  Benefit and Limitations"),
-        ("heads", ["Type", "RAT", "Item", "Document statement", "Condition", "User impact", "Chart / Doc Ref"]),
-        ("row", ["Benefit", "LTE", "Idle transfer", "Avoids gap-assisted inter-frequency measurement and connected HO", "Idle MLB / dedicated prio", "Lower immediate signalling and gap loss than connected HO", "MLB §4.3 Figs 4-4/4-5"]),
-        ("row", ["Benefit", "LTE", "Sets next access cell", "Next RRC starts on the camped cell", "After reselection or dedicated prio", "Long-term layer distribution", "Fig 5-1"]),
-        ("row", ["Benefit", "LTE", "Temporary dedicated priority", "T320-bounded; discarded at next RRC", "Load-balance release uses T320ForLoadBalance", "Does not permanently rewrite SIB", "§5.1.3.1"]),
-        ("row", ["Limitation", "LTE", "Not real-time", "Dedicated priorities discarded when UE enters connected", "Long RRC session", "Cannot rebalance an already-connected UE", "§5.1.3.1"]),
-        ("row", ["Limitation", "LTE", "Static common priority", "Highest usable priority tier collects most idle UEs", "Equal-priority still ranks by RF, not load", "Need idle MLB for dynamic load", "§5.1.3.5"]),
-        ("row", ["Limitation", "LTE", "SI delay", "Next SI modification period / 3 hours", "Judge camping only after SI + turnover", "Do not evaluate in the same 15-min as the change", "§7.1.3"]),
-        ("row", ["Limitation", "LTE", "UE capability", "Legacy UEs: only NORMAL freqs; ≤8 dedicated freqs without enhanced meas", "incMonEUTRA", "Enhanced UEs up to 16 dedicated freqs", "§5.1.3.1 / §5.1.3.3"]),
-        ("row", ["Limitation", "LTE", "Load-based redirection", "Selects by QoS/priority, not measured RF", "No location quality check", "More disruptive than HO", "§6.1.1 pp.69–70"]),
-        ("space", 8),
-
-        ("section", "SN-4  Selection criteria / Trigger Condition"),
-        ("heads", ["Rule", "RAT", "MO Name / Check Item", "When it starts", "Parameter Detail", "User Experience Consideration", "Chart / Doc Ref"]),
-        ("row", ["Criterion S RSRP", "LTE", "QRxLevMin, QRxLevMinOffset, UePowerMax/PMax", "Cell selection / reselection suitability", "Srxlev>0", "Too-high floor causes access failure", "§5.1.2"]),
-        ("row", ["Criterion S RSRQ", "LTE", "QQualMin, QQualMinOffset", "Only if QQualMin configured ≠ 0/absent", "Squal>0", "RSRQ moves with load — can oscillate", "§5.1.2"]),
-        ("row", ["Higher-priority target", "LTE", "ThreshXhigh / ThreshXhighQ / EutranReselTime", "Always measuring higher-priority freqs", "Target S > high thd for timer; camped >1 s", "Protects against premature high-band camp", "Tables 5-1/5-2"]),
-        ("row", ["Lower-priority target", "LTE", "ThrshServLow / ThreshXlow", "Serving becomes poor and no higher target", "Both serving-low and target-low must pass", "Too-low serving-low = sticky poor serving cell", "Tables 5-3/5-4"]),
-        ("row", ["Equal-priority rank", "LTE", "Qhyst / QoffsetFreq / CellQoffset", "Same priority frequencies", "Rn>Rs for reselection time", "Do not use static offset as hourly load control", "§5.1.3.4"]),
-        ("row", ["Equal/lower search start", "LTE", "SNonIntraSearch / SNonIntraSearchQ", "Serving S ≤ search threshold", "Does not apply to higher-priority freqs", "CFG recommended (battery)", "§5.1.3.3"]),
-        ("row", ["Idle MLB trigger", "LTE", "InterFreqIdleMlbUeNumThd + IdleUE", "Idle-user load ≥ thd through judge period", "Dedicated prio to low-load E-UTRAN freqs", "Class order NG-RAN > E-UTRAN low-load > E-UTRAN high-load > UTRAN > GERAN", "MLB §5.1.1.5 p.33"]),
-        ("space", 8),
-
-        ("section", "SN-5  Activation parameter / Switch   (core table)"),
-        ("note", "Conditional Parameter = what must be set/enabled before the main switch takes effect."),
-        ("heads", H_ACT),
-        ("row", ["5.1", "LTE", "CELLRESEL", "CellReselPriority", "SIB3 serving common priority. Larger = higher. Huawei: capacity/hotspot above coverage layer.", "SIB3 broadcast", "§5.1.3.1 ; MLB §5.1.2.1"]),
-        ("row", ["5.2", "LTE", "EUTRANINTERNFREQ", "CellReselPriorityCfgInd", "CFG — otherwise UE does not reselect to that frequency", "Frequency listed in SIB5 plan", "§5.1.3.1"]),
-        ("row", ["5.3", "LTE", "EUTRANINTERNFREQ", "CellReselPriority", "SIB5 target priority (same hierarchy as serving design)", "CfgInd=CFG", "§5.1.3.1"]),
-        ("row", ["5.4", "LTE", "EUTRANINTERNFREQ", "MeasPerformanceDemand", "NORMAL for main capacity and intensive-coverage frequencies", "UNDELIVER ⇒ not in SIB5 and not idle-MLB target", "§5.1.3.3 ; §5.3.2.3"]),
-        ("row", ["5.5", "LTE", "CELLRESEL", "SIntraSearchCfgInd + SIntraSearch", "CFG. Huawei: SIntraSearch > SNonIntraSearch", "SIB3", "§5.4.1.1"]),
-        ("row", ["5.6", "LTE", "CELLRESEL", "SNonIntraSearchCfgInd + SNonIntraSearch", "CFG. Huawei example value 10", "Does not stop higher-priority measurement", "§5.4.1.1 ; MLB §5.1.2.1"]),
-        ("row", ["5.7", "LTE", "CELLALGOSWITCH", "InterFreqIdleMlbSwitch", "ON to enable intra-LTE idle load equalisation", "InterFreqMlbSwitch + license + MlbTargetInd allows idle", "§5.3.2.3"]),
-        ("row", ["5.8", "LTE", "EnhancedMlbAlgoSwitch", "DediPrioManageOnLowLoadSw (+ EnhSw)", "ON to keep released UEs off higher-load frequencies", "T320 set; idle MLB path", "MLB Table 5-10"]),
-        ("row", ["5.9", "LTE", "RRCCONNSTATETIMER", "T320ForLoadBalance", "Lifetime of load-balance dedicated priorities", "Idle MLB ON. SPID/PCC T320 is always 180 min.", "§5.1.3.1"]),
-        ("row", ["5.10", "LTE", "EUTRANINTERNFREQ", "MlbTargetInd", "ALLOWED, or ALLOWED_WITHOUT_IDLE_MLB / WITHOUT_CONNECT_MLB", "OverlapInd / NoHoFlag still control coverage HO", "MLB pp.28, 129"]),
-        ("row", ["5.11", "LTE", "GlobalProcSwitch", "CellReselectionOptSwitch", "ON recommended with idle equalisation (preferential LTE freq delivery)", "Dedicated-priority path", "§5.3.2.3"]),
-        ("space", 8),
-
-        ("section", "SN-6  Prerequisite functions"),
-        ("heads", H_PRE),
-        ("row", ["6.1", "LTE", "EUTRANINTERNFREQ", "Complete SIB5 inter-frequency set", "All required LTE freqs present, normally NORMAL", "UE cannot reselect a missing frequency", "§5.1.3.1"]),
-        ("row", ["6.2", "LTE", "EUTRANINTERFREQNCELL", "Neighbor list in SIB4/SIB5", "Max 16 listed neighbors per frequency", "Truncation looks like a threshold problem", "§5.1.3.4"]),
-        ("row", ["6.3", "LTE", "InterFreqBlkCell", "ApplicationScope", "Do not use blacklist as load control. 65535 = idle+connected. Only 16 idle blacklists delivered.", "Hidden valid target", "§5.1.3.2"]),
-        ("row", ["6.4", "LTE", "SIB broadcast", "SI BER ≤ 1%", "Required for reselection", "Failed SIB5 decode looks like failed layer balance", "§5.3.4"]),
-        ("row", ["6.5", "LTE", "UE capability", "Band support / incMonEUTRA", "Legacy may see only NORMAL and ≤8 dedicated freqs", "Idle cannot move incapable UEs", "§5.1.3.1"]),
-        ("row", ["6.6", "LTE", "Idle MLB features", "Adaptive-proportion / fixed-proportion idle", "Adaptive: not recommended. Fixed-proportion: do not combine with user-number connected MLB.", "Ping-pong", "MLB §5.5.2.1 ; §5.4.2.2"]),
-        ("space", 8),
-
-        ("section", "SN-7  Mutually impacted"),
-        ("heads", H_IMP),
-        ("row", ["7.1", "LTE", "Idle dedicated priority", "Connected MLB / A1–A5", "Dedicated prio discarded at RRC connect", "Do not fight idle vs connected on the same day without design", "§5.1.3.1"]),
-        ("row", ["7.2", "LTE", "Fixed-proportion idle MLB", "User-number connected MLB", "Huawei ping-pong warning — do not combine", "Keep fixed-proportion OFF if connected user-number MLB is ON", "MLB §5.4.2.2"]),
-        ("row", ["7.3", "LTE", "ThreshXhigh too low", "UL / access on high band", "Premature high-band camping", "Coverage quality of target", "Tables 5-1/5-2"]),
-        ("row", ["7.4", "LTE", "ThrshServLow too low", "Connected A2/A5", "UE stays on a dying serving cell in idle", "Align idle serving-low with coverage A2 philosophy", "Tables 5-3/5-4"]),
-        ("row", ["7.5", "LTE", "RSRQ-based reselection", "Scheduler load", "RSRQ falls when cell is busy → oscillation", "RSRP is the more stable quantity (same caution as connected book)", "CM Table 4-15"]),
-        ("row", ["7.6", "LTE", "Energy saving / carrier shutdown", "SIB5 highest-priority list", "Sleeping cell must not remain a high idle target", "ES feature interaction", "MLB pp.153–156"]),
-        ("space", 8),
-
-        ("section", "SN-8  Relation with Other Feature"),
-        ("heads", H_IMP),
-        ("row", ["8.1", "LTE", "Intra-RAT MLB", "Idle transfer method", "Dedicated priority + T320 + InterFreqIdleMlbSwitch", "MlbTargetInd can forbid idle targeting of a frequency", "MLB §5.1.1.5"]),
-        ("row", ["8.2", "LTE", "Connected Mode", "A1/A2/A5 vs idle thds", "Dedicated idle prio discarded at connect", "Align ThreshXhigh with A1-escape; ThrshServLow with A5-return", "CM Ch.5 / Ch.11"]),
-        ("row", ["8.3", "LTE", "Carrier Aggregation", "PCC anchoring + CaUserLoadTransferSw", "Changes whether CA-capable UEs are idle-steered", "PCC load ≠ SCC load", "MLB Fig 5-3"]),
-        ("row", ["8.4", "LTE", "SPID / operator / RAN share", "Dedicated priorities from SPID or operator", "SPID/PCC T320 always 180 min", "Can override MLB dedicated prio design", "§5.1.3.1"]),
-        ("row", ["8.5", "LTE", "GERAN / UTRAN", "Dedicated class order", "NG-RAN > E-UTRAN low-load > E-UTRAN high-load > UTRAN > GERAN", "Idle MLB class, not a 4G-to-2G dump tool", "MLB §5.1.1.5 p.33"]),
-        ("space", 8),
-
-        ("section", "SN-9  License Requirements"),
-        ("heads", ["Function", "RAT", "Switch / function", "License (verify in MAE / license file)", "If missing", "Notes", "Chart / Doc Ref"]),
-        ("row", ["Basic idle / SIB reselection", "LTE", "CELLSEL / CELLRESEL / SIB3/SIB5", "Basic LTE eNodeB", "N/A", "Normally included", "—"]),
-        ("row", ["Idle MLB / dedicated load priority", "LTE", "InterFreqIdleMlbSwitch", "Intra-RAT Mobility Load Balancing family (confirm exact name)", "Switch may look ON; dedicated-pri counters stay 0", "Same family as connected MLB", "MLB book"]),
-        ("row", ["Blind idle / blind MLB", "LTE", "InterFreqBlindMlbSwitch", "Blind MLB option if sold separately", "Blind path unavailable", "Higher access risk", "MLB"]),
-        ("row", ["DediPrioManageOnLowLoad(Enh)", "LTE", "EnhancedMlbAlgoSwitch", "Enhanced MLB / idle-priority option — verify", "Released UEs bounce back to high-load freq", "Table 5-10", "MLB §5.3.1"]),
-        ("space", 8),
-
-        ("section", "SN-10  All Parameter List  (sequence / connected order)"),
-        ("note", "Conditional Parameter column = relation with other feature, as requested in the original template."),
-        ("heads", H_PAR),
-        ("row", ["1", "LTE", "CELLSEL", "QRxLevMin / QQualMin / offsets / UePowerMax", "Cell-selection Criterion S floors", "Not a load knob. Pcompensation uses UePowerMax.", "§5.1.2"]),
-        ("row", ["2", "LTE", "CELLRESEL", "QRxLevMin / QQualMin / PMax", "Serving/intra reselection suitability", "Same philosophy as selection", "§5.1.3.4"]),
-        ("row", ["3", "LTE", "CELLRESEL", "CellReselPriority", "SIB3 serving common priority", "Capacity/hotspot above coverage layer (Huawei note)", "§5.1.3.1"]),
-        ("row", ["4", "LTE", "EUTRANINTERNFREQ", "CellReselPriorityCfgInd", "Whether SIB5 carries priority", "Without CFG: no reselection to that freq", "§5.1.3.1"]),
-        ("row", ["5", "LTE", "EUTRANINTERNFREQ", "CellReselPriority", "SIB5 target priority", "CfgInd=CFG", "§5.1.3.1"]),
-        ("row", ["6", "LTE", "EUTRANINTERNFREQ", "QRxLevMin / QqualMin / Pmax", "Target-frequency suitability", "UL/PRACH still required for a usable camp", "§5.1.3.4"]),
-        ("row", ["7", "LTE", "CELLRESEL", "SIntraSearchCfgInd / SIntraSearch / Q", "Skip intra meas when serving very good", "CFG recommended", "§5.1.3.3"]),
-        ("row", ["8", "LTE", "CELLRESEL", "SNonIntraSearchCfgInd / SNonIntraSearch / Q", "Start equal/lower inter-freq search", "Example 10; SIntra > SNonIntra", "§5.4.1.1"]),
-        ("row", ["9", "LTE", "EUTRANINTERNFREQ", "ThreshXhigh / ThreshXhighQ", "Higher-priority target qualification", "EutranReselTime must persist", "Tables 5-1/5-2"]),
-        ("row", ["10", "LTE", "CELLRESEL", "ThrshServLow / ThrshServLowQ", "Permission to leave for lower priority", "Align with connected A2/A5", "Tables 5-3/5-4"]),
-        ("row", ["11", "LTE", "EUTRANINTERNFREQ", "ThreshXlow / ThreshXlowQ", "Lower-priority target qualification", "Target must be actually usable", "Tables 5-3/5-4"]),
-        ("row", ["12", "LTE", "CELLRESEL", "Qhyst / TReselEutran", "Serving stickiness / intra timer", "Small timer = ping-pong", "§5.1.3.4"]),
-        ("row", ["13", "LTE", "EUTRANINTERNFREQ", "QoffsetFreq / EutranReselTime", "Equal-prio freq offset / inter timer", "Positive offset reduces target rank", "§5.1.3.4"]),
-        ("row", ["14", "LTE", "EUTRANINTERFREQNCELL", "CellQoffset", "Per-neighbor idle offset", "Affects which 16 neighbors are listed", "§5.1.3.4"]),
-        ("row", ["15", "LTE", "EUTRANINTERNFREQ", "MeasPerformanceDemand", "NORMAL / REDUCED / UNDELIVER", "UNDELIVER blocks idle MLB target", "§5.1.3.3"]),
-        ("row", ["16", "LTE", "CELLRESEL", "SpeedDepReselCfgInd + SfMedium/High", "Speed-based timer/hyst scaling", "Not a tool for static layer imbalance", "§5.1.3.6"]),
-        ("row", ["17", "LTE", "InterFreqBlkCell", "ApplicationScope", "Idle/connected blacklist scope", "Not a load tool", "§5.1.3.2"]),
-        ("row", ["18", "LTE", "RRCCONNSTATETIMER", "T320ForLoadBalance / T320ForOther", "Dedicated-priority lifetime", "SPID/PCC always 180 min", "§5.1.3.1"]),
-        ("row", ["19", "LTE", "CELLALGOSWITCH", "InterFreqIdleMlbSwitch / InterFreqMlbSwitch", "Idle MLB enable", "License + MlbTargetInd", "§5.3.2.3"]),
-        ("row", ["20", "LTE", "EnhancedMlbAlgoSwitch", "DediPrioManageOnLowLoadSw / EnhSw", "Hold low-load dedicated prio", "T320", "MLB Table 5-10"]),
-        ("row", ["21", "LTE", "EUTRANINTERNFREQ", "MlbTargetInd", "Allowed / without idle MLB / without connect MLB", "Coverage HO is separate from MLB targeting", "MLB pp.28, 129"]),
-        ("row", ["22", "LTE", "CELLMLB", "InterFreqIdleMlbUeNumThd / idle transfer type", "Idle user-number trigger", "See Intra-RAT MLB sheet", "MLB Table 5-2"]),
-        ("row", ["23", "LTE", "EUTRANINTERNFREQ", "HO_TRG_FREQ_FORBID_MEAS_FLAG", "Filtered from dedicated-priority delivery", "Document: recommended only for SCC-only frequencies", "§5.1.3.1"]),
-        ("row", ["24", "LTE", "GlobalProcSwitch", "CellReselectionOptSwitch", "Preferential LTE frequency delivery in dedicated prio", "Idle MLB path", "§5.3.2.3"]),
-        ("space", 8),
-
-        ("section", "SN-11  Final MML Command for activations  (maintain sequence)"),
-        ("note", "SN-11 columns A–G are the original template: Parameter Sequence | MO | Activation Value | Conditional Parameter | Remarks | Parameter Description | More Notes. Column H is Chart / Doc Ref. Replace LocalCellId / DlEarfcn. Validate in MAE."),
-        ("heads", H_MML),
-        ("row", ["0", "—",
-                 "LST CELLRESEL: LocalCellId=<x>; LST EUTRANINTERNFREQ: LocalCellId=<x>; LST CELLALGOSWITCH: LocalCellId=<x>; LST RRCCONNSTATETIMER:;",
-                 "Read-only", "Dump current before any MOD", "Baseline", "Keep LST output with the change record"]),
-        ("row", ["1", "CELLRESEL",
-                 "MOD CELLRESEL: LocalCellId=<x>, CellReselPriority=<prio>, SNonIntraSearchCfgInd=CFG, SIntraSearchCfgInd=CFG, SNonIntraSearch=<val>;",
-                 "SIntraSearch > SNonIntraSearch", "Huawei example SNonIntraSearch=10. Capacity/hotspot priority above coverage layer.",
-                 "Serving common priority + search start", "One cell/layer per command"]),
-        ("row", ["2", "EUTRANINTERNFREQ",
-                 "MOD EUTRANINTERNFREQ: LocalCellId=<x>, DlEarfcn=<earfcn>, CellReselPriorityCfgInd=CFG, CellReselPriority=<prio>, MeasPerformanceDemand=NORMAL;",
-                 "EARFCN exists in the SIB5 plan", "Repeat for every non-serving frequency that must be reselectable.",
-                 "SIB5 priority + visibility", "Do not use UNDELIVER on a frequency that idle MLB must use"]),
-        ("row", ["3", "EUTRANINTERNFREQ",
-                 "MOD EUTRANINTERNFREQ: LocalCellId=<x>, DlEarfcn=<earfcn>, ThreshXhigh=<val>, ThreshXlow=<val>, QoffsetFreq=<val>, EutranReselTime=<val>;",
-                 "Matches higher vs lower vs equal-priority design", "No universal dBm in the feature book. Calibrate from MR.",
-                 "Reselection qualification and equal-prio offset", "Timers must persist"]),
-        ("row", ["4", "CELLRESEL",
-                 "MOD CELLRESEL: LocalCellId=<x>, ThrshServLow=<val>;",
-                 "Align with connected coverage A2/A5", "Lower-priority fallback permission",
-                 "Serving-low", "Do not set so low that a dying serving cell never yields"]),
-        ("row", ["5", "EUTRANINTERNFREQ",
-                 "MOD EUTRANINTERNFREQ: LocalCellId=<x>, DlEarfcn=<earfcn>, MlbTargetInd=<ALLOWED | ALLOWED_WITHOUT_IDLE_MLB | ALLOWED_WITHOUT_CONNECT_MLB>;",
-                 "Verify exact enum on the NE. Coverage NoHoFlag remains PERMIT if coverage HO is required.",
-                 "Stops a frequency being an idle and/or connected MLB target without blocking ordinary coverage HO.",
-                 "MLB target indication", "pp.28, 129"]),
-        ("row", ["6", "CELLALGOSWITCH",
-                 "MOD CELLALGOSWITCH: LocalCellId=<x>, MlbAlgoSwitch=InterFreqMlbSwitch-1&InterFreqIdleMlbSwitch-1;",
-                 "Intra-RAT MLB license; MlbTargetInd already set; SIB5 NORMAL",
-                 "Enable idle+connected MLB bits. Leave InterFreqBlindMlbSwitch-0 unless containment is proven.",
-                 "Master idle MLB bit", "Do this after steps 1–5"]),
-        ("row", ["7", "RRCCONNSTATETIMER",
-                 "MOD RRCCONNSTATETIMER: T320ForLoadBalance=<T320>;",
-                 "Idle MLB ON", "SPID/PCC path stays 180 minutes regardless of this parameter.",
-                 "Dedicated-priority lifetime", "§5.1.3.1"]),
-        ("row", ["8", "Verify",
-                 "LST the MOs above. Wait the next SI modification period. Check L.RRCRel.load.DedicatedPri.LTE.High and L.RRCRel.Lowload.DedicatedPri.LTE.High.",
-                 "SI is not instant [IM] §7.1.3", "Do not judge camping in the same 15-min as the change.",
-                 "Idle dedicated-priority counters (MLB book)", "Close the sequence"]),
+        ("section", "Priority between these steps"),
+        ("row", ["A", "Coverage always wins", "Connected", "A2/A5 running", "Do not let MLB or FreqPri pull a UE off a dying serving cell.", "Table 4-5"]),
+        ("row", ["B", "FreqPri and MLB must not fight", "Connected + MLB", "Same frequency pair", "No reverse MLB target on a FreqPri pair. MlbBasedFreqPriHoSwitch lets MLB own heavy load.", "Connected p.303"]),
+        ("row", ["C", "Idle MLB and connected user-number MLB", "Idle + MLB", "Both ON", "Do not combine fixed-proportion idle MLB with user-number connected MLB (ping-pong).", "MLB §5.4.2.2"]),
+        ("row", ["D", "Admission", "Connected", "Unnecessary / offload HO", "Target must admit ALL QCIs. Prep fail is often admission, not RF.", "Tables 4-16 / 4-17"]),
     ]
 
 
-# ===========================================================================
-# CONNECTED — abbreviated structure same pattern, quality rows
-# ===========================================================================
-def connected_blocks():
+def idle():
     return [
-        ("section", "Process chart from document  (right-side chart for SN-1)"),
-        ("flow", ["Initiate HO function", "Meas or blind", "Deliver meas config", "UE report A1–A5", "Pick target + admit", "Execute HO", "Fig 4-1"]),
-        ("note", "Connected Mode Fig 4-1 §§4.1.1–4.1.8 pp.29–65. Necessary coverage HO preempts unnecessary load/optimization HO (Table 4-5). Full MLB algorithm is not in this book — see Intra-RAT MLB."),
-        ("space", 8),
-        ("section", "SN list"),
-        ("heads", H_SN),
-        ("row", ["1", "LTE", "Working Principal", "Measurement-based HO using A1–A5; blind only if containment known", "Meas flags / NRT", "See SN-1", "Fig 4-1"]),
-        ("row", ["2", "LTE", "Major highlighted Point", "RSRP preferred; A4>A2; A4 TTT 5120 ms disables FreqPri; example dBm are not design values", "—", "See MAJOR", "Table 4-9, 4-15, §11.4.1.2"]),
-        ("row", ["3", "LTE", "Benefit and Limitations", "Coverage protection vs not a load algorithm; gaps steal TTI; unnecessary HO admits all QCIs", "—", "See SN-3", "Tables 4-16/4-17"]),
-        ("row", ["4", "LTE", "Selection criteria / Trigger", "A2 coverage; A1/A4 FreqPri; A4/A5 MLB execution; UE filters in MLB book", "Correct A2 family", "See SN-4", "Ch.5 / Ch.11"]),
-        ("row", ["5", "LTE", "Activation parameter / Switch", "A1/A2/A4/A5 groups, meas flags, object cap, FreqPri vs MLB switches", "License + NRT", "See SN-5", "Ch.4–5, 11"]),
-        ("row", ["6", "LTE", "Prerequisite functions", "NRT, object cap, SMeasure, gap, admission, CA PCC", "—", "See SN-6", "Tables 4-3/4-4"]),
-        ("row", ["7", "LTE", "Mutually impacted", "FreqPri reverse MLB pair, A4 vs A2, protect timer, decouple SW", "—", "See SN-7", "p.303"]),
-        ("row", ["8", "LTE", "Relation with Other Feature", "Idle, MLB, CA, VoLTE QCI, ES", "—", "See SN-8", "§3"]),
-        ("row", ["9", "LTE", "License Requirements", "Basic coverage, FreqPri package, MLB A4, MLB A5, blind", "MAE", "See SN-9", "pp.142–143 MLB"]),
-        ("row", ["10", "LTE", "All Parameter List", "Object → filter → A1/A2 → A3/A4/A5 → FreqPri → punish", "Connected order", "See SN-10", "—"]),
-        ("row", ["11", "LTE", "Final MML Command", "LST → flags → object cap → coverage → A4 → event type → FreqPri coord → verify", "Sequence", "See SN-11", "MML"]),
-        ("space", 8),
-
-        ("section", "SN-1  Working Principal  (connected order)"),
+        ("section", "Procedure chart"),
+        ("flow", ["PLMN select", "Criterion S", "Camp + read SI", "Measure", "Reselect", "RRC on camped cell"],
+         "Idle Mode Management Fig 4-1 and Fig 5-1"),
+        ("space", 6),
+        ("section", "Step by step"),
         ("heads", H_STEP),
-        ("row", ["1", "LTE", "Handover-function initiation", "Coverage / FreqPri / MLB / service / quality", "Classification: necessary vs unnecessary offload vs unnecessary optimization", "Table 3-1; pp.26–28", "pp.21–28"]),
-        ("row", ["2", "LTE", "Choose measurement-based or blind", "Fig 4-2", "Blind only when immediate mobility is required and neighbor contains serving", "Higher access-failure risk", "pp.31–32"]),
-        ("row", ["3", "LTE", "Deliver measurement configuration", "EUTRANINTERNFREQ object + report config", "FREQ_MEAS_FLAG; not HO_TRG_FREQ_FORBID; object count limits", "Equal-priority objects may be picked randomly if over cap", "Tables 4-1 to 4-4, p.125"]),
-        ("row", ["4", "LTE", "Event A1 — serving good", "A1: Ms−Hys > Thresh for TTT", "Stops coverage meas; can start A1-based FreqPri", "Table 4-8", "pp.41–46"]),
-        ("row", ["5", "LTE", "Event A2 — serving poor", "A2: Ms+Hys < Thresh for TTT", "Starts inter-freq coverage meas. Separate families for A3 / A4-A5 / IRAT / blind", "Tables 5-1, 5-3, 5-10", "pp.97–100"]),
-        ("row", ["6", "LTE", "Event A3 — neighbor relatively better", "Mn+Ofn+Ocn−Hys > Ms+Ofs+Ocs+A3Offset", "Ofn/Ofs frequency offsets; Ocn/Ocs CIO", "Table 5-16", "p.127"]),
-        ("row", ["7", "LTE", "Event A4 — neighbor absolutely good", "Mn+Ofn+Ocn−Hys > Thresh", "Used by MLB and FreqPri (target good enough, need not beat serving)", "Table 5-22; Table 11-5; MLB p.137", "p.145"]),
-        ("row", ["8", "LTE", "Event A5 — serving poor AND neighbor good", "Ms+Hys<Th1 AND Mn+Ofn+Ocn−Hys>Th2", "Strongest coverage-protection semantics", "Tables 5-18/5-19", "pp.129–132"]),
-        ("row", ["9", "LTE", "Target pick + admission", "Best filtered target; necessary = any QCI; unnecessary = all QCIs", "Inter-eNB unnecessary HO does not immediately try next target after admit fail", "Tables 4-16/4-17", "pp.61–65"]),
-        ("row", ["10", "LTE", "Execute HO then punish/retry on fail", "Res/Opt/NonRes punish timers and counts", "Do not treat every prep fail as an RF-threshold problem", "Tables 4-16/4-17", "pp.61–65"]),
+        ("row", ["1", "PLMN selection", "NAS / PLMN", "Happens before cell selection. SIB reselection priority does not control this.", "Wrong PLMN looks like a reselection fault.", "Fig 5-1"]),
+        ("row", ["2", "Initial / stored / release-directed cell selection", "CELLSEL ; RRCConnectionRelease redirect", "Last camped, stored info, or strongest cell per band. SIB priority does not fully control first camp after power-up.", "Do not expect SIB priority to fix first access after reset.", "§5.1.2"]),
+        ("row", ["3", "Criterion S (suitable cell)", "QRxLevMin, QQualMin, UePowerMax / PMax", "Srxlev = Qrxlevmeas − (Qrxlevmin + offset) − Pcompensation > 0. Squal > 0 only if QQualMin is set.", "Too-high floor = access failure. This is not a load-balance knob.", "§5.1.2"]),
+        ("row", ["4", "Camp and read SI", "SIB1 / SIB3 / SIB4 / SIB5", "SIB3: intra + serving common priority. SIB5: inter-freq priority, thresholds, offset, neighbour list. Max 16 non-serving E-UTRAN frequencies.", "Missing SIB5 frequency = UE cannot reselect there.", "Table 7-1"]),
+        ("row", ["5", "Intra-frequency measurement", "SIntraSearch / SIntraSearchQ", "UE measures intra unless serving is above the search threshold. Huawei: set CfgInd = CFG.", "Always-on intra meas if not CFG.", "§5.1.3.3"]),
+        ("row", ["6", "Inter-frequency measurement", "SNonIntraSearch ; CellReselPriority", "Higher-priority frequency: always measured. Equal/lower: only after search threshold. Search threshold does not stop high-priority search.", "Huawei example SNonIntraSearch = 10; SIntraSearch > SNonIntraSearch.", "§5.1.3.3 ; §5.4.1.1"]),
+        ("row", ["7", "Reselection to a higher-priority frequency", "ThreshXhigh / ThreshXhighQ / EutranReselTime", "Camped > 1 s AND target S > high threshold for the timer.", "Too-low ThreshXhigh = premature high-band camp.", "Tables 5-1 / 5-2"]),
+        ("row", ["8", "Reselection to equal-priority frequency", "Qhyst, QoffsetFreq, CellQoffset", "Rn = Qmeas,n − Qoffset ; Rs = Qmeas,s + Qhyst ; Rn > Rs for the timer. Ranking is RF, not load.", "Do not use static offset as hourly load control.", "§5.1.3.4"]),
+        ("row", ["9", "Reselection to a lower-priority frequency", "ThrshServLow / ThreshXlow", "No higher target AND serving S < serving-low AND target S > X-low, for the timer.", "Too-low serving-low = UE stays on a dying serving cell.", "Tables 5-3 / 5-4"]),
+        ("row", ["10", "Dedicated priority at RRC release", "IdleModeMobilityControlInfo ; T320", "Replaces common SIB priorities until T320, next RRC, or PLMN select. Missing serving freq in the dedicated list is treated as lowest.", "Idle MLB / SPID / PCC use this path. SPID/PCC T320 is always 180 min.", "§5.1.3.1"]),
+        ("row", ["11", "Next RRC setup", "Camped cell", "UE establishes RRC on the cell where it is then camped. Idle distribution = next access layer.", "A long connected session cannot be moved by idle MLB.", "Fig 5-1"]),
         ("space", 8),
-
-        ("section", "SN-2  Major highlighted Point"),
-        ("major", "Huawei recommends RSRP as the general trigger quantity. RSRQ fluctuates with load. [CM] Table 4-15 pp.55–56"),
-        ("major", "A4 target threshold must be better than the relevant coverage A2, otherwise ping-pong. [CM] Table 5-22 pp.147–148; Table 11-8 pp.315–316"),
-        ("major", "InterFreqHoA4TimeToTrig = 5120 ms disables frequency-priority, CQI and service-based inter-frequency HO. [CM] Table 4-9 p.48"),
-        ("major", "MML examples such as A1/A2 −85/−87 dBm and A4 −103 dBm are command examples, not design values. [CM] §11.4.1.2 pp.317–318"),
-        ("major", "Equal-priority frequencies may be selected randomly for measurement objects — not load balance. [CM] §5.3.1.2 p.125"),
-        ("major", "A frequency that is a FreqPri target must not have a reverse MLB-target relationship. Ping-pong warning. [CM] p.303"),
-        ("major", "MlbBasedFreqPriHoSwitch lets MLB own heavy-load decisions when specified MLB functions are active. [CM] Table 11-7 p.313"),
+        ("section", "Huawei cautions (read with the steps above)"),
+        ("heads", H_NOTE),
+        ("row", ["1", "Priority is per frequency, not per cell", "No SIB5 priority ⇒ no reselection to that frequency. Max 16 non-serving E-UTRAN frequencies.", "Set CellReselPriorityCfgInd = CFG on every frequency the UE must be able to reselect.", "Step 4, 7–9", "§5.1.3.1"]),
+        ("row", ["2", "Capacity / hotspot above coverage layer", "Huawei recommendation for broadcast reselection priority.", "Do not publish operator-specific numbers as book defaults. Design the ranks; keep coverage layer under capacity layers.", "Step 7", "MLB §5.1.2.1"]),
+        ("row", ["3", "UNDELIVER blocks idle MLB", "MeasPerformanceDemand = UNDELIVER removes the frequency from SIB5. It cannot be an idle-MLB target.", "Keep NORMAL on frequencies idle MLB must use.", "Step 4, 10", "§5.3.2.3"]),
+        ("row", ["4", "SI is delayed", "Applied in the next SI modification period; otherwise after change-paging or 3 hours. SIB BER must be ≤ 1%.", "Do not judge camping in the same 15-min as the change.", "Step 4", "§7.1.3, §5.3.4"]),
+        ("row", ["5", "Do not use the optimisation-table sentence on QRxLevMinOffset", "It conflicts with the Criterion-S formula.", "Treat Criterion S as written in §5.1.2.", "Step 3", "§5.1.2 vs §5.4.1.1.3"]),
+        ("row", ["6", "Adaptive-proportion idle balancing is not recommended without Huawei support", "Fixed-proportion idle + user-number connected MLB causes ping-pong.", "Keep that pair off together.", "Step 10", "MLB §5.5.2.1 ; §5.4.2.2"]),
+        ("row", ["7", "Neighbour list cap 16", "SIB listed neighbours are truncated.", "Truncation looks like a threshold problem.", "Step 4", "§5.1.3.4"]),
         ("space", 8),
-
-        ("section", "SN-3  Benefit and Limitations"),
-        ("heads", ["Type", "RAT", "Item", "Document statement", "Condition", "User impact", "Chart / Doc Ref"]),
-        ("row", ["Benefit", "LTE", "Coverage protection", "A2→A3/A4/A5 avoids drop", "Necessary HO priority", "Indoor / edge rescue", "Table 4-5"]),
-        ("row", ["Benefit", "LTE", "A4 offload gate", "Target need only be good enough", "MLB / FreqPri", "Can leave a still-usable source", "Table 5-22"]),
-        ("row", ["Benefit", "LTE", "A5 dual condition", "Serving poor AND target good", "Coverage fallback", "Strongest protection semantics", "Tables 5-18/5-19"]),
-        ("row", ["Benefit", "LTE", "FreqPri + A1", "Service on high band, low band kept for coverage", "Fig 11-1/11-2", "Coverage-layer protection intent", "pp.299–300"]),
-        ("row", ["Limitation", "LTE", "Not a load algorithm", "Equal static priority ≠ instantaneous load share", "Need MLB book", "Random object pick among equal prio", "p.125"]),
-        ("row", ["Limitation", "LTE", "Measurement gaps", "Gap pattern steals DL TTIs", "Old UE / VoLTE", "Prefer A1/A2 gated meas", "Fig 4-10"]),
-        ("row", ["Limitation", "LTE", "Admission", "Unnecessary/offload HO must admit ALL QCIs", "VoLTE + data", "Prep fail often admission, not RF", "Tables 4-16/4-17"]),
-        ("row", ["Limitation", "LTE", "Blind HO", "No candidate measurement", "Containment required", "Higher access failure", "Fig 4-2"]),
+        ("section", "What idle gives / where it stops"),
+        ("heads", ["Type", "Item", "Document statement", "Condition", "User impact", "Source"]),
+        ("row", ["Gives", "Low signalling vs connected HO", "Idle transfer avoids gap-assisted inter-frequency measurement and connected HO.", "Dedicated priority / idle MLB", "Lower immediate gap loss", "MLB Figs 4-4 / 4-5"]),
+        ("row", ["Gives", "Sets next access cell", "Next RRC starts on the camped cell.", "After reselection or dedicated prio", "Long-term layer mix", "Fig 5-1"]),
+        ("row", ["Stops", "Not real-time", "Dedicated priorities discarded at connected / T320 / PLMN select.", "Long RRC session", "Cannot rebalance an already-connected UE", "§5.1.3.1"]),
+        ("row", ["Stops", "Highest common priority collects most idle UEs", "Equal-priority still ranks by RF, not load.", "No idle MLB", "Need idle MLB for dynamic load", "§5.1.3.5"]),
         ("space", 8),
-
-        ("section", "SN-4  Selection criteria / Trigger Condition"),
-        ("heads", ["Rule", "RAT", "MO Name / Check Item", "When it starts", "Parameter Detail", "User Experience Consideration", "Chart / Doc Ref"]),
-        ("row", ["Coverage", "LTE", "A2 family then A3/A4/A5", "Serving crosses A2", "CovBasedInterFreqHoMode = IMMEDIATE / SIGNAL / FREQPRIORITY", "Must preempt load HO", "§5.3.1"]),
-        ("row", ["Frequency priority", "LTE", "A1 / good serving + A4 target", "Place service on high-priority frequency", "LoadTriggerFreqPriHoSwitch: overlap, load info, neighbor not UE-number MLB triggered, no PCI conflict", "Waiting timer can wait for highest-priority freq", "pp.302–303, 308–309"]),
-        ("row", ["MLB HO execution", "LTE", "MlbInterFreqHoEventType A4 or A5", "MLB source trigger already true", "A5 needs non-cosited MLB license", "UE pick is in the MLB book", "MLB Table 6-3"]),
-        ("row", ["Stop coverage meas", "LTE", "A1", "Serving recovers", "ReduceInvalidA1A2RptSigSwitch can cut signalling", "Keep A1/A2 hyst consistent", "pp.111–115"]),
-        ("row", ["Blind", "LTE", "BlindHoPriority", "Immediate mobility + neighbor contains serving", "No RF measurement of candidate", "Use only with known full overlap", "Table 5-22 p.149"]),
-        ("row", ["High mobility", "LTE", "FREQ_PRI_HO_FORBID_SW / MLB_HO_FORBID_SW", "UE detected above ~30 km/h", "No FreqPri/MLB meas", "Near-NLOS can misclassify", "pp.304–305; MLB pp.136–141"]),
-        ("space", 8),
-
-        ("section", "SN-5  Activation parameter / Switch   (core table)"),
-        ("heads", H_ACT),
-        ("row", ["5.1", "LTE", "INTERFREQHOGROUP", "A1/A2 Hyst + TTT + correct A2 family", "Calibrate from MR. Not the MML example dBm.", "Filter coefficient also adds delay", "Tables 5-3, 5-10, 4-9"]),
-        ("row", ["5.2", "LTE", "INTERFREQHOGROUP", "A3 offset / hyst / TTT", "Relative HO among similar coverage", "QoffsetFreqConn + CIO", "Table 5-16"]),
-        ("row", ["5.3", "LTE", "INTERFREQHOGROUP", "InterFreqLoadBasedHoA4ThdRsrp/Rsrq + A4 Hyst/TTT", "A4 better than coverage A2. TTT ≠ 5120 ms if FreqPri required.", "IfMlbThdRsrpOffset / FreqPriHoA4ThldRsrpOffset", "Table 11-5; Table 4-9 p.48"]),
-        ("row", ["5.4", "LTE", "INTERFREQHOGROUP", "A5 Thd1 / Thd2 (+ MLB A5 Thd1)", "Serving poor AND target good", "A5 MLB needs extra license", "Tables 5-18/5-19; MLB Table 6-3"]),
-        ("row", ["5.5", "LTE", "EUTRANINTERNFREQ", "MlbInterFreqHoEventType", "A4 for co-sited FDD; A5 if licensed non-cosited", "MLB license", "MLB §6.1.1.5.2"]),
-        ("row", ["5.6", "LTE", "EUTRANINTERNFREQ", "FREQ_MEAS_FLAG / HO_TRG_FREQ_FORBID_MEAS_FLAG", "Select meas; deselect forbid for required HO targets", "Object cap must be enough", "§4.1.4.1.2"]),
-        ("row", ["5.7", "LTE", "CELLUEMEASCONTROLCFG", "MaxNonIntraMeasObjNum / MaxEutranFddMeasFreqNum", "≥ number of needed inter-freq objects", "Else random missing frequency", "Tables 4-3/4-4"]),
-        ("row", ["5.8", "LTE", "FreqPri switches", "MlbBasedFreqPriHoSwitch / LoadTriggerFreqPriHoSwitch / ReduceInvalidFreqPriHoSwitch", "ON when MLB should own heavy load", "No reverse MLB target on a FreqPri pair", "Table 11-7; p.303"]),
-        ("row", ["5.9", "LTE", "INTRARATHOCOMM", "FreqPriInHoProtectionTimer / FreqPriIFHoWaitingTimer / CovBasedIfHoWaitingTimer", "Non-zero protect after incoming unnecessary HO", "Stops bounce-back", "p.300, 308–309"]),
-        ("row", ["5.10", "LTE", "HOMEASCOMM", "SMeasure", "UE may skip inter-freq meas while serving RSRP above SMeasure", "Can silently suppress A4", "§4.1.5 p.55"]),
-        ("space", 8),
-
-        ("section", "SN-6  Prerequisite functions"),
-        ("heads", H_PRE),
-        ("row", ["6.1", "LTE", "EUTRANINTERFREQNCELL", "Symmetric NRT, NoHoFlag, no PCI conflict", "Required", "Looks like a bad A4 if missing", "§4.1.4"]),
-        ("row", ["6.2", "LTE", "CELLUEMEASCONTROLCFG", "Object capacity ≥ needed freqs", "Required", "Some frequencies never measured", "Tables 4-3/4-4"]),
-        ("row", ["6.3", "LTE", "HOMEASCOMM", "SMeasure compatible with intended A4/FreqPri", "Verify RRC", "A4 never delivered", "§4.1.5"]),
-        ("row", ["6.4", "LTE", "Gap pattern", "AutoGapSwitch / GapPatternType", "Acceptable TTI cost", "VoLTE / old UE TP drop", "Fig 4-10"]),
-        ("row", ["6.5", "LTE", "Admission / X2", "HoAdmitSwitch / X2RoHoAdmitSwitch", "Healthy", "Unnecessary HO needs all-QCI admit", "Tables 4-16/4-17"]),
-        ("row", ["6.6", "LTE", "CA book", "PCC anchoring vs FreqPri", "Do not fight PCC policy", "Ping-pong §11.3.2.3", "p.312"]),
-        ("space", 8),
-
-        ("section", "SN-7  Mutually impacted"),
-        ("heads", H_IMP),
-        ("row", ["7.1", "LTE", "FreqPri target A→B", "MLB target B→A", "Forbidden — ping-pong", "Remove reverse MLB target", "p.303"]),
-        ("row", ["7.2", "LTE", "A4 threshold", "Coverage A2", "A4 must be better than A2", "Ping-pong if too close", "Table 5-22"]),
-        ("row", ["7.3", "LTE", "Incoming unnecessary HO", "Immediate FreqPri re-meas", "Use FreqPriInHoProtectionTimer", "Bounce-back", "p.300"]),
-        ("row", ["7.4", "LTE", "Coverage meas already delivered", "MLB A4 meas", "LOAD_COVERAGE_MEAS_DECOUPLE_SW allows load meas after coverage meas", "MLB meas blocked otherwise", "MLB p.139"]),
-        ("row", ["7.5", "LTE", "Large CIO / QoffsetFreqConn", "RF problem", "Can mask overshoot", "Fix RF first", "pp.46–48"]),
-        ("row", ["7.6", "LTE", "Virtual-grid smart carrier selection", "FreqPri HO", "Ping-pong if concurrent", "Do not combine casually", "p.312"]),
-        ("space", 8),
-
-        ("section", "SN-8  Relation with Other Feature"),
-        ("heads", H_IMP),
-        ("row", ["8.1", "LTE", "Idle Mode", "Dedicated prio discarded at connect", "Align ThreshXhigh↔A1 and ThrshServLow↔A5", "Next access vs session", "IM §5.1.3.1"]),
-        ("row", ["8.2", "LTE", "Intra-RAT MLB", "This book executes A4/A5 HO", "MLB decides who/when. ONLY_STRONGEST_CELL is in MLB book.", "HO engine vs load algorithm", "MLB Table 6-5"]),
-        ("row", ["8.3", "LTE", "Carrier Aggregation", "PCC anchoring in CA book", "PCC move ≠ SCC traffic", "§3 p.23; §11.3.2.3", "CA document"]),
-        ("row", ["8.4", "LTE", "VoLTE / QCI", "QCI-specific hyst/TTT ; unnecessary HO admits all QCIs", "Never offload if target cannot admit all QCIs", "Tables 4-16/4-17", "QCI"]),
-        ("row", ["8.5", "LTE", "Energy saving", "Sleeping cell must not remain FreqPri/MLB target", "Coordinate ES", "MLB function-impact tables", "MLB pp.153–156"]),
-        ("space", 8),
-
-        ("section", "SN-9  License Requirements"),
-        ("heads", ["Function", "RAT", "Switch / function", "License (verify in MAE)", "If missing", "Notes", "Chart / Doc Ref"]),
-        ("row", ["Coverage A1–A5", "LTE", "INTERFREQHOGROUP", "Basic LTE mobility", "Usually included", "Confirm lean package", "—"]),
-        ("row", ["Frequency-priority HO", "LTE", "FreqPri Ch.11", "FreqPri / service-based mobility package — verify name", "A1 high-band steering does not run", "Fig 11-1/11-2", "Ch.11"]),
-        ("row", ["MLB A4", "LTE", "Intra-RAT MLB", "Intra-RAT Mobility Load Balancing", "No load HO", "See MLB sheet", "MLB"]),
-        ("row", ["MLB event A5", "LTE", "MlbInterFreqHoEventType=A5", "Intra-LTE Load Balancing for Non-cosited Cells", "Stay on A4", "pp.142–143", "MLB Table 6-3"]),
-        ("row", ["Blind HO", "LTE", "BlindHoPriority", "Blind option if sold separately", "Blind unavailable", "Higher access risk", "Table 5-22"]),
-        ("space", 8),
-
-        ("section", "SN-10  All Parameter List  (sequence / connected order)"),
+        ("section", "Parameters in the same order as the procedure"),
         ("heads", H_PAR),
-        ("row", ["1", "LTE", "EUTRANINTERNFREQ", "DlEarfcn / MeasBandWidth / QoffsetFreqConn", "Measurement object", "NRT must exist", "Table 4-2"]),
-        ("row", ["2", "LTE", "EUTRANINTERNFREQ", "FREQ_MEAS_FLAG / HO_TRG_FREQ_FORBID_MEAS_FLAG / INTER_FREQ_FILTER_FLAG", "Frequency filtering", "Silent no-HO if wrong", "§4.1.4.1.2"]),
-        ("row", ["3", "LTE", "CELLUEMEASCONTROLCFG", "MaxNonIntraMeasObjNum / MaxEutranFddMeasFreqNum", "How many objects can be delivered", "Random drop if over limit", "Tables 4-3/4-4"]),
-        ("row", ["4", "LTE", "HOMEASCOMM", "SMeasure", "Skip inter-freq meas when serving strong", "Can suppress A4", "§4.1.5"]),
-        ("row", ["5", "LTE", "CELLHOPARACFG", "EutranFilterCoeffRsrp / Rsrq", "L3 filter", "Over-smooth delays rescue", "Table 4-14"]),
-        ("row", ["6", "LTE", "ENODEBALGOSWITCH", "AutoGapSwitch / GapPatternType / DedicatedGapPatternType", "Measurement gap", "Steals TTI", "Fig 4-10"]),
-        ("row", ["7", "LTE", "INTERFREQHOGROUP", "InterFreqHoA1A2Hyst / TimeToTrig", "A1/A2 stability", "QCI-specific optional", "Table 4-9"]),
-        ("row", ["8", "LTE", "INTERFREQHOGROUP", "Coverage A2 threshold families", "A3 vs A4/A5 vs IRAT vs blind", "Wrong family = wrong HO", "Tables 5-3, 5-10"]),
-        ("row", ["9", "LTE", "INTERFREQHOGROUP", "A3 offset / hyst / TTT / A3RsrqOffset", "Relative HO", "Ofn/Ocn apply", "Table 5-16"]),
-        ("row", ["10", "LTE", "EUTRANINTERFREQNCELL", "CellIndividualOffset", "Connected CIO (Ocn)", "Large CIO masks RF", "pp.46–48"]),
-        ("row", ["11", "LTE", "INTERFREQHOGROUP", "InterFreqLoadBasedHoA4ThdRsrp/Rsrq + A4 Hyst/TTT", "MLB/FreqPri A4", "TTT 5120 ms disables FreqPri", "Tables 11-5, 4-9"]),
-        ("row", ["12", "LTE", "EUTRANINTERNFREQ", "IfMlbThdRsrpOffset / FreqPriHoA4ThldRsrpOffset", "Per-frequency A4 offset", "Plus operator/QCI offset", "Table 11-5; MLB p.137"]),
-        ("row", ["13", "LTE", "INTERFREQHOGROUP", "A5 Thd1/Thd2 / Mlb A5 Thd1", "Dual-condition HO", "A5 MLB license", "Tables 5-18/5-19"]),
-        ("row", ["14", "LTE", "EUTRANINTERNFREQ", "MlbInterFreqHoEventType", "A4 or A5 for FDD MLB", "Table 6-3", "MLB §6.1.1.5.2"]),
-        ("row", ["15", "LTE", "CELLALGOSWITCH", "CovBasedInterFreqHoMode + waiting timer", "Coverage execution timing", "Fig 5-3–5-7", "§5.3.1"]),
-        ("row", ["16", "LTE", "INTRARATHOCOMM", "FreqPriIFHoWaitingTimer / FreqPriInHoProtectionTimer", "Wait / incoming protect", "p.300, 308–309", "Ch.11"]),
-        ("row", ["17", "LTE", "FreqPri switches", "MlbBasedFreqPriHoSwitch / LoadTrigger / ReduceInvalid", "MLB owns heavy load", "No reverse target", "Table 11-7"]),
-        ("row", ["18", "LTE", "CELLOPHOCFG", "HighMobiUeHoForbidSw / FREQ_PRI_HO_FORBID_SW", "No MLB/FreqPri if ~30 km/h", "NLOS misclassify", "pp.304–305"]),
-        ("row", ["19", "LTE", "HOMEASCOMM", "HO fail punish timers / counts", "Retry vs penalty", "Prep fail ≠ RF", "Tables 4-16/4-17"]),
-        ("row", ["20", "LTE", "EUTRANINTERFREQNCELL", "BlindHoPriority / InterFreqMlbBlindHo", "Blind path", "Containment required", "Table 5-22 p.149"]),
-        ("row", ["21", "LTE", "RATFREQPRIORITYGROUP", "CovIFHo RSRP/RSRQ Hyst/TTT", "Per-freq/QCI coverage values", "Do not copy VoLTE to all QCI", "Table 4-9"]),
+        ("row", ["1", "CELLSEL", "QRxLevMin / QQualMin / offsets / UePowerMax", "Selection floor (Criterion S)", "Not a load knob", "§5.1.2"]),
+        ("row", ["2", "CELLRESEL", "CellReselPriority", "SIB3 serving common priority", "Capacity/hotspot above coverage (Huawei note)", "§5.1.3.1"]),
+        ("row", ["3", "EUTRANINTERNFREQ", "CellReselPriorityCfgInd + CellReselPriority", "SIB5 target priority", "CFG required or UE will not reselect there", "§5.1.3.1"]),
+        ("row", ["4", "CELLRESEL", "SIntraSearchCfgInd / SNonIntraSearchCfgInd + values", "When to start intra / equal-lower inter search", "CFG; example SNonIntraSearch=10; SIntra > SNonIntra", "§5.4.1.1"]),
+        ("row", ["5", "EUTRANINTERNFREQ", "ThreshXhigh / ThreshXlow / QoffsetFreq / EutranReselTime", "Higher / lower / equal-prio qualification", "Calibrate from MR. No universal dBm in the book.", "Tables 5-1 to 5-4"]),
+        ("row", ["6", "CELLRESEL", "ThrshServLow / Qhyst / TReselEutran", "Permission to leave serving; stickiness", "Align serving-low with connected A2/A5 thinking", "Tables 5-3 / 5-4"]),
+        ("row", ["7", "EUTRANINTERNFREQ", "MeasPerformanceDemand", "NORMAL / REDUCED / UNDELIVER", "UNDELIVER blocks idle MLB target", "§5.1.3.3"]),
+        ("row", ["8", "EUTRANINTERNFREQ", "MlbTargetInd", "ALLOWED / WITHOUT_IDLE_MLB / WITHOUT_CONNECT_MLB", "Coverage NoHoFlag is separate", "MLB pp.28, 129"]),
+        ("row", ["9", "CELLALGOSWITCH", "InterFreqIdleMlbSwitch (+ InterFreqMlbSwitch)", "Idle MLB enable", "License + SIB5 NORMAL + MlbTargetInd", "§5.3.2.3"]),
+        ("row", ["10", "RRCCONNSTATETIMER", "T320ForLoadBalance", "Lifetime of load-balance dedicated priorities", "SPID/PCC path stays 180 min", "§5.1.3.1"]),
         ("space", 8),
-
-        ("section", "SN-11  Final MML Command for activations  (maintain sequence)"),
+        ("section", "How Idle locks to the other two books"),
+        ("heads", H_STEP),
+        ("row", ["→ Connected", "Dedicated idle prio discarded at RRC connect", "Align ThreshXhigh with A1-escape and ThrshServLow with A5-return", "Do not change idle and coverage A2 on the same day without a design", "Sheet 3", "§5.1.3.1"]),
+        ("row", ["→ MLB", "Idle transfer method = dedicated prio + T320", "InterFreqIdleMlbSwitch + idle-allowed MlbTargetInd + SIB5 NORMAL", "Class order includes UTRAN/GERAN — not a dump tool", "Sheet 4", "MLB §5.1.1.5"]),
+        ("space", 8),
+        ("section", "Idle activation sequence"),
         ("heads", H_MML),
-        ("row", ["0", "—",
-                 "LST INTERFREQHOGROUP: LocalCellId=<x>, InterFreqHoGroupId=<g>; LST EUTRANINTERNFREQ: LocalCellId=<x>; LST EUTRANINTERFREQNCELL: LocalCellId=<x>; LST CELLHOPARACFG: LocalCellId=<x>; LST HOMEASCOMM:;",
-                 "Read-only", "Dump first. Do not paste example −85/−87/−103 dBm as live values.", "Baseline", "§11.4.1.2"]),
-        ("row", ["1", "EUTRANINTERNFREQ",
-                 "MOD EUTRANINTERNFREQ: LocalCellId=<x>, DlEarfcn=<earfcn>; FREQ_MEAS_FLAG selected; HO_TRG_FREQ_FORBID_MEAS_FLAG deselected for required HO targets;",
-                 "NRT exists", "Audit flags before any dBm change. Most silent A4 failures are flags/NRT.", "Meas eligibility", "§4.1.4.1.2"]),
-        ("row", ["2", "CELLUEMEASCONTROLCFG",
-                 "MOD CELLUEMEASCONTROLCFG: LocalCellId=<x>, MaxNonIntraMeasObjNum=<n>, MaxEutranFddMeasFreqNum=<n>;",
-                 "n ≥ number of inter-frequency objects this cell must measure", "Otherwise equal-priority frequencies are randomly dropped.", "Object cap", "p.125"]),
-        ("row", ["3", "INTERFREQHOGROUP",
-                 "MOD INTERFREQHOGROUP: LocalCellId=<x>, InterFreqHoGroupId=<g>; set coverage A1/A2/A5 from MR (correct A2 family);",
-                 "A2 family matches intended HO type (A3 vs A4/A5 vs blind)", "Coverage rescue first.", "Coverage A1/A2/A5", "Tables 5-3, 5-10"]),
-        ("row", ["4", "INTERFREQHOGROUP",
-                 "MOD INTERFREQHOGROUP: LocalCellId=<x>, InterFreqHoGroupId=<g>, InterFreqLoadBasedHoA4ThdRsrp=<calib>, InterFreqHoA4Hyst=<hyst>, InterFreqHoA4TimeToTrig=<ttt>;",
-                 "A4 better than coverage A2. TTT ≠ 5120 ms if FreqPri/MLB A4 is required.", "Main absolute target gate for MLB/FreqPri.", "A4", "Table 4-9 p.48"]),
-        ("row", ["5", "EUTRANINTERNFREQ",
-                 "MOD EUTRANINTERNFREQ: LocalCellId=<x>, DlEarfcn=<earfcn>, MlbInterFreqHoEventType=A4;",
-                 "A5 only with Intra-LTE Load Balancing for Non-cosited Cells license", "Co-sited FDD typically A4.", "MLB event type", "MLB Table 6-3"]),
-        ("row", ["6", "FreqPri related MO",
-                 "Enable MlbBasedFreqPriHoSwitch and LoadTriggerFreqPriHoSwitch when MLB is used; keep FreqPriInHoProtectionTimer non-zero; no reverse MLB target on a FreqPri pair;",
-                 "MLB feature active; confirm exact MO name in MAE", "Stops FreqPri fighting MLB.", "Coordination", "p.303; Table 11-7"]),
-        ("row", ["7", "Verify",
-                 "L.HHO.InterFreq.Coverage.Prep/Exec/Succ; L.HHO.InterFreq.FreqPri.*; L.RRC.ReEst.ReconfFail.Att. PrepSucc=ExecAtt/PrepAtt; ExecSucc=ExecSucc/ExecAtt.",
-                 "Busy-hour, pair-level", "Table 5-24 p.153; Tables 11-9/11-10 pp.318–319.", "Counters", "Close the sequence"]),
+        ("row", ["0", "LST", "Dump CELLRESEL, EUTRANINTERNFREQ, CELLALGOSWITCH, RRCCONNSTATETIMER", "Read-only", "Keep the LST with the change record", "MAE"]),
+        ("row", ["1", "CELLRESEL", "Serving priority + CFG search; SIntraSearch > SNonIntraSearch", "SIB3 plan ready", "Huawei example SNonIntraSearch=10. Capacity/hotspot above coverage.", "§5.4.1.1"]),
+        ("row", ["2", "EUTRANINTERNFREQ", "Every needed EARFCN: CfgInd=CFG, priority, MeasPerformanceDemand=NORMAL", "Frequency exists in SIB5 plan", "Repeat per non-serving frequency", "§5.1.3.1"]),
+        ("row", ["3", "EUTRANINTERNFREQ", "ThreshXhigh / ThreshXlow / QoffsetFreq / EutranReselTime from MR", "Priority ranks already set", "No universal dBm in the feature book", "Tables 5-1 to 5-4"]),
+        ("row", ["4", "CELLRESEL", "ThrshServLow aligned with coverage A2/A5 philosophy", "Connected coverage design known", "Do not set so low that a dying cell never yields", "Tables 5-3 / 5-4"]),
+        ("row", ["5", "EUTRANINTERNFREQ", "MlbTargetInd as designed (idle allow or forbid)", "Coverage NoHoFlag remains PERMIT if coverage HO is required", "WITHOUT_IDLE_MLB blocks only idle MLB, not coverage HO", "pp.28, 129"]),
+        ("row", ["6", "CELLALGOSWITCH then T320", "Idle MLB bit after 1–5. Then T320ForLoadBalance.", "License present; Blind bit stays off unless designed", "Wait next SI modification period before judging camp", "§7.1.3"]),
     ]
 
 
-# ===========================================================================
-# MLB
-# ===========================================================================
-def mlb_blocks():
+def connected():
     return [
-        ("section", "Process chart from document  (right-side chart for SN-1)"),
-        ("flow", ["Eval load N/C", "Trigger thd+offset", "Admit target", "Select UEs", "A4/A5 HO or idle release", "Penalty / stop", "Fig 3-1"]),
-        ("note", "MLB Fig 3-1 p.15. Equalisation vs offload: Fig 4-1 p.16. Idle vs connected transfer: Figs 4-4/4-5 pp.18–19. Load = N/C. Normalised difference = (Load_s−Load_t)/Load_s."),
-        ("space", 8),
-        ("section", "SN list"),
-        ("heads", H_SN),
-        ("row", ["1", "LTE", "Working Principal", "Equalise or offload inter-frequency LTE load via HO or idle dedicated prio", "License + NRT + load exchange", "See SN-1", "Fig 3-1, Fig 4-1"]),
-        ("row", ["2", "LTE", "Major highlighted Point", "ActiveUe+SE for unequal BW; ONLY_STRONGEST_CELL; 5s+MaxUe≥40 over-transfer; PRB MLB skips CA UEs; 7-day smart thd", "—", "See MAJOR", "Table 5-5, 6-5, p.136"]),
-        ("row", ["3", "LTE", "Benefit and Limitations", "True load equalisation vs cannot fix RF/CA scheduler; blind risk; ES interaction", "—", "See SN-3", "§6.1.2.2 p.141"]),
-        ("row", ["4", "LTE", "Selection criteria / Trigger", "UE-number / PRB thd; target admit; UE filters; volume; freq pick; A4/A5", "Table 6-2", "See SN-4", "§6.1.1"]),
-        ("row", ["5", "LTE", "Activation parameter / Switch", "MlbAlgoSwitch, trigger mode, eval SW, strategy, MlbTargetInd, event type", "License first", "See SN-5", "Table 6-2"]),
-        ("row", ["6", "LTE", "Prerequisite functions", "License, X2 load, overlap, HO SR, HW/transport, A4 delivery, SIB5 if idle", "—", "See SN-6", "pp.27–29"]),
-        ("row", ["7", "LTE", "Mutually impacted", "Fixed-proportion idle, PRB exclusive modes, FreqPri reverse, ES, CA, smart relearn", "—", "See SN-7", "§5.4.2.2"]),
-        ("row", ["8", "LTE", "Relation with Other Feature", "Idle method, Connected HO engine, CA PCC, ES, SON smart thd, inter-RAT separate", "—", "See SN-8", "—"]),
-        ("row", ["9", "LTE", "License Requirements", "Intra-RAT MLB; A5 non-cosited; blind; CA transfer; SON thd", "MAE", "See SN-9", "pp.142–143"]),
-        ("row", ["10", "LTE", "All Parameter List", "Switch → model → trigger → target → UE pick → event → idle T320", "Connected order", "See SN-10", "Ch.8 → parameter reference"]),
-        ("row", ["11", "LTE", "Final MML Command", "LST → MlbTargetInd → eval SW → CELLMLB mode/strategy → thd/volume → CA → master bit → T320 → verify", "Sequence", "See SN-11", "MML"]),
-        ("space", 8),
-
-        ("section", "SN-1  Working Principal  (connected order)"),
+        ("section", "Procedure chart"),
+        ("flow", ["Start HO function", "Meas or blind", "Deliver meas config", "UE reports A1–A5", "Pick target + admit", "Execute HO"],
+         "Connected Mode Fig 4-1 §§4.1.1–4.1.8. Full MLB algorithm is in the MLB book, not here."),
+        ("space", 6),
+        ("section", "Step by step"),
         ("heads", H_STEP),
-        ("row", ["1", "LTE", "Choose equalisation or offload", "Peer load available → equalisation; else offload", "Fig 4-1 p.16", "Equalisation is safer when X2/intra-eNB load exists", "§4.1"]),
-        ("row", ["2", "LTE", "Choose load indicator", "UE number vs PRB vs HW/transport Low/Med/High/OverLoad", "Fig 4-2, Fig 4-3", "UE number ≈ short non-GBR; PRB ≈ GBR/sustained", "§4.2"]),
-        ("row", ["3", "LTE", "Compute user-number load", "Load = N/C ; diff = (Load_s−Load_t)/Load_s", "ActiveUeBasedLoadEvalSw uses DL-buffer UEs; SpectralEffBasedLoadEvalSw uses PRB, scale, GBR, SE", "SE refresh every 1 min if ≥10 UL-sync UEs", "§5.1.1 pp.24–27"]),
-        ("row", ["4", "LTE", "Trigger connected UE-number MLB", "N ≥ InterFreqMlbUeNumThd + MlbUeNumOffset for MlbTrigJudgePeriod", "Stop when N < InterFreqMlbUeNumThd", "Table 6-2: InterFreqMlbSwitch + UE_NUMBER_ONLY + SynchronizedUE", "p.127–128"]),
-        ("row", ["5", "LTE", "Admit target cell/frequency", "NoHoFlag, not blacklisted, no PCI conflict, HO SR, meas flags, OverlapInd, MlbTargetInd, Low/Med HW+transport, not punished", "WITHOUT_IDLE_MLB / WITHOUT_CONNECT_MLB block one mode", "pp.27–29, 129", "§5.1.1.2"]),
-        ("row", ["6", "LTE", "Select UEs", "UL-sync, not emergency, SPID/QCI, eMBMS, protect/punish timers, optional ARP/PRB/MCS/SNR", "ONLY_STRONGEST_CELL recommended", "Else immediate coverage HO bounce", "pp.130–140; Table 6-5 p.159"]),
-        ("row", ["7", "LTE", "Limit volume and pick frequency", "min(needed delta, hyst, MlbMaxUeNum); FAIR / PRIORITY / LOADPRIORITY", "LoadTransferEnhSw changes multi-target math", "5 s eval + MlbMaxUeNum≥40 over-transfers", "pp.134–137"]),
-        ("row", ["8", "LTE", "Execute transfer", "FDD: measurement-based HO A4 or A5; optional blind; idle: RRC release + dedicated prio + T320", "A5 needs extra license", "Redirection generally not used in FDD", "§6.1.1.5.2 p.136"]),
-        ("row", ["9", "LTE", "Idle transfer (if enabled)", "Dedicated prio: NG-RAN > E-UTRAN low-load > E-UTRAN high-load > UTRAN > GERAN", "T320ForLoadBalance", "Affects next session only", "§5.1.1.5 p.33"]),
+        ("row", ["1", "Start the HO function and classify it", "Coverage / FreqPri / MLB / service / quality", "Necessary coverage vs unnecessary offload vs unnecessary optimisation.", "Wrong class = load HO stealing a coverage rescue.", "pp.21–28 ; Table 4-5"]),
+        ("row", ["2", "Choose measurement-based or blind", "Fig 4-2 ; BlindHoPriority", "Blind only when mobility is immediate and the neighbour contains the serving coverage.", "Higher access-failure risk.", "pp.31–32"]),
+        ("row", ["3", "Deliver measurement configuration", "EUTRANINTERNFREQ + report config", "FREQ_MEAS_FLAG selected; HO_TRG_FREQ_FORBID deselected for required targets; object-count limits.", "Over cap: equal-priority frequencies may drop at random — not load balance.", "Tables 4-1 to 4-4, p.125"]),
+        ("row", ["4", "Event A1 — serving becomes good", "A1: Ms − Hys > Thresh for TTT", "Stops coverage measurements. Can start A1-based FreqPri.", "Keep A1/A2 hysteresis consistent.", "Table 4-8"]),
+        ("row", ["5", "Event A2 — serving becomes poor", "A2: Ms + Hys < Thresh for TTT", "Starts inter-frequency coverage measurement. Separate A2 families for A3, A4/A5, IRAT, blind.", "Wrong A2 family = wrong HO.", "Tables 5-1, 5-3, 5-10"]),
+        ("row", ["6", "Event A3 — neighbour relatively better", "Mn+Ofn+Ocn−Hys > Ms+Ofs+Ocs+A3Offset", "Ofn/Ofs frequency offsets; Ocn/Ocs CIO.", "Large CIO can mask RF overshoot.", "Table 5-16"]),
+        ("row", ["7", "Event A4 — neighbour absolutely good", "Mn+Ofn+Ocn−Hys > Thresh", "Used by MLB and FreqPri: target need only be good enough, not better than serving.", "A4 must be better than coverage A2 or the UE ping-pongs.", "Table 5-22 ; Table 11-5"]),
+        ("row", ["8", "Event A5 — serving poor AND neighbour good", "Ms+Hys < Th1 AND Mn+Ofn+Ocn−Hys > Th2", "Strongest coverage-protection semantics. MLB A5 needs extra non-cosited license.", "Use A4 for co-sited FDD MLB unless that license exists.", "Tables 5-18 / 5-19"]),
+        ("row", ["9", "Pick target and admit", "Best filtered target", "Necessary HO: any QCI. Unnecessary / offload: ALL QCIs. Inter-eNB unnecessary HO does not immediately try the next target after admit fail.", "Prep fail is often admission, not RF.", "Tables 4-16 / 4-17"]),
+        ("row", ["10", "Execute, then punish / retry on fail", "Res / Opt / NonRes punish timers", "Do not treat every prep fail as an RF-threshold problem.", "Fix X2/admission before tightening A4.", "pp.61–65"]),
         ("space", 8),
-
-        ("section", "SN-2  Major highlighted Point"),
-        ("major", "Huawei recommends ActiveUeBasedLoadEvalSw when MLB frequencies have different bandwidths, plus SpectralEffBasedLoadEvalSw when SE differs significantly (e.g. >30%). [MLB] Table 5-5 pp.47–48"),
-        ("major", "Raw UE-count balancing on unequal bandwidth can reduce DL throughput. [MLB] §6.1.2.2 p.141"),
-        ("major", "MlbHoCellSelectStrategy = ONLY_STRONGEST_CELL is recommended. Otherwise the UE is coverage-HO’d back. [MLB] Table 6-5 p.159"),
-        ("major", "InterFreqLoadEvalPrd = 5 s together with MlbMaxUeNum ≥ 40 can transfer excessive UEs. [MLB] p.136"),
-        ("major", "PRB-usage MLB does not transfer CA UEs, is burst-sensitive, does not guarantee experience fairness, and loses gain when CA penetration ≳ 60%. [MLB] Fig 6-2, §6.5 pp.207–215"),
-        ("major", "NCellTrigThldSmartOptAlgoSw: 7 days collect, then calculate, refresh every 7 days. Aggressive first-week seeds: extra CPU/HO and up to 5% TP fluctuation. [MLB] pp.29–31, 162, 224–225"),
-        ("major", "Fixed-proportion idle + user-number connected MLB = ping-pong. Adaptive-proportion idle is not recommended without Huawei support. [MLB] §5.4.2.2, §5.5.2.1"),
+        ("section", "Huawei cautions"),
+        ("heads", H_NOTE),
+        ("row", ["1", "Use RSRP as the general trigger quantity", "RSRQ moves with scheduler load and can oscillate.", "Keep RSRP unless there is a documented RSRQ design.", "Steps 4–8", "Table 4-15"]),
+        ("row", ["2", "A4 must be better than the relevant coverage A2", "Otherwise coverage and load HO fight.", "Set A4 after coverage A2, from MR, not from MML examples.", "Step 7", "Table 5-22 ; Table 11-8"]),
+        ("row", ["3", "A4 TTT = 5120 ms disables FreqPri, CQI and service-based inter-frequency HO", "Treat 5120 ms as off, not as slow.", "Use a real TTT if FreqPri or MLB A4 is required.", "Step 7", "Table 4-9 p.48"]),
+        ("row", ["4", "Example A1/A2 −85/−87 dBm and A4 −103 dBm are command examples, not design values", "Copying them live is a design error.", "Calibrate from MR.", "Steps 4–8", "§11.4.1.2"]),
+        ("row", ["5", "Equal-priority measurement objects may be selected randomly", "That is not load balance.", "Raise MaxNonIntraMeasObjNum / MaxEutranFddMeasFreqNum to cover every needed frequency.", "Step 3", "§5.3.1.2 p.125"]),
+        ("row", ["6", "FreqPri target A→B must not have reverse MLB target B→A", "Ping-pong warning.", "Remove the reverse pair. Use MlbBasedFreqPriHoSwitch when MLB should own heavy load.", "Step 1, 8", "p.303 ; Table 11-7"]),
+        ("row", ["7", "SMeasure can silently suppress A4", "UE may skip inter-freq meas while serving RSRP is above SMeasure.", "Check HOMEASCOMM if A4 never arrives.", "Step 3", "§4.1.5"]),
         ("space", 8),
-
-        ("section", "SN-3  Benefit and Limitations"),
-        ("heads", ["Type", "RAT", "Item", "Document statement", "Condition", "User impact", "Chart / Doc Ref"]),
-        ("row", ["Benefit", "LTE", "Equalisation", "Uses source and target load to reduce difference", "Load exchange available", "Safer than blind offload", "Fig 4-1"]),
-        ("row", ["Benefit", "LTE", "BW / SE aware", "C includes PRB, scale, GBR, measured SE when switches ON", "ActiveUe + SpectralEff", "Needed for 15 vs 20 MHz", "Table 5-5"]),
-        ("row", ["Benefit", "LTE", "Idle + connected pair", "Idle steers next access; connected moves now", "T320 vs HO", "Idle has less gap/HO cost", "Figs 4-4/4-5"]),
-        ("row", ["Benefit", "LTE", "CA transfer option", "CaUserLoadTransferSw can move CA/PCC UEs in user-number MLB", "Target CA capability condition", "Otherwise CA UEs stay filtered", "pp.129–136, 157"]),
-        ("row", ["Limitation", "LTE", "Unequal BW / coverage / UE band", "Gain falls when coverage, capability or PLMN differ", "p.39, 141, 214", "Not a substitute for RF fix", "§6.1.2.2"]),
-        ("row", ["Limitation", "LTE", "PRB MLB", "No CA UE; no experience fairness; bursty", "CA ≳ 60% kills gain", "Use as supplement only", "§6.5"]),
-        ("row", ["Limitation", "LTE", "Blind offload", "No target load check", "Can overload a ‘low-load’ looking cell", "pp.167, 231", "Offload path"]),
-        ("row", ["Limitation", "LTE", "Energy saving", "MLB and carrier shutdown change each other’s targets", "Coordinate ES", "pp.153–156, 219–222", "Function impact"]),
+        ("section", "What connected mobility gives / where it stops"),
+        ("heads", ["Type", "Item", "Document statement", "Condition", "User impact", "Source"]),
+        ("row", ["Gives", "Coverage rescue", "A2 → A3/A4/A5 avoids drop", "Necessary HO priority", "Indoor / edge", "Table 4-5"]),
+        ("row", ["Gives", "A4 offload gate", "Target need only be good enough", "MLB / FreqPri", "Can leave a still-usable source", "Table 5-22"]),
+        ("row", ["Gives", "FreqPri + A1", "Service on high band; low band kept for coverage", "Fig 11-1 / 11-2", "Coverage-layer protection intent", "pp.299–300"]),
+        ("row", ["Stops", "Not a load algorithm", "Equal static priority ≠ instantaneous load share", "Need MLB book", "Random object pick among equal prio", "p.125"]),
+        ("row", ["Stops", "Measurement gaps steal DL TTIs", "Gap pattern cost", "Old UE / VoLTE", "Prefer A1/A2 gated meas", "Fig 4-10"]),
         ("space", 8),
-
-        ("section", "SN-4  Selection criteria / Trigger Condition"),
-        ("heads", ["Rule", "RAT", "MO Name / Check Item", "When it starts", "Parameter Detail", "User Experience Consideration", "Chart / Doc Ref"]),
-        ("row", ["Connected UE-number", "LTE", "InterFreqMlbUeNumThd + MlbUeNumOffset", "N ≥ thd+offset for whole MlbTrigJudgePeriod", "Stop N < thd. Mode UE_NUMBER_ONLY + SynchronizedUE", "Use ActiveUe on unequal BW", "p.128; Table 6-2"]),
-        ("row", ["Idle UE-number", "LTE", "InterFreqIdleMlbUeNumThd + IdleUE", "Idle-user condition holds", "RRC release + dedicated prio", "Next session only", "Table 5-2"]),
-        ("row", ["PRB usage", "LTE", "InterFreqMlbThd / UlThd + LoadOffset + min UE", "PRB ≥ thd+offset", "Does not move CA UEs", "Bursty services can false-trigger", "Table 6-18; §6.5.1"]),
-        ("row", ["Target admit", "LTE", "MlbTargetInd, OverlapInd, NoHoFlag, HO SR, HW/transport", "Before using a neighbor as equalisation target", "Low/Med HW+transport; not punished", "Reject ⇒ punish CellPunishPrdNum × eval period", "pp.27–29"]),
-        ("row", ["UE filter", "LTE", "CELLMLBUESEL + protect timers", "After trigger and admit", "UL-sync, not emergency, QCI/SPID, optional ARP/PRB/MCS/SNR", "Do not pick edge UEs only for PRB", "pp.130–135"]),
-        ("row", ["Volume / freq", "LTE", "MlbMaxUeNum / FreqSelectStrategy", "At execution", "FAIRSTRATEGY / PRIORITYBASED / LOADPRIORITY", "LOADPRIORITY uses above-average load difference", "pp.137, 213"]),
-        ("row", ["HO event", "LTE", "MlbInterFreqHoEventType", "After UE selected", "A4 co-sited; A5 licensed non-cosited", "LOAD_COVERAGE_MEAS_DECOUPLE_SW if coverage meas already on", "Table 6-3; p.139"]),
-        ("space", 8),
-
-        ("section", "SN-5  Activation parameter / Switch   (core table)"),
-        ("heads", H_ACT),
-        ("row", ["5.1", "LTE", "CELLALGOSWITCH", "InterFreqMlbSwitch", "Master intra-RAT MLB bit", "License + NRT + MlbTargetInd", "Table 6-2 p.127"]),
-        ("row", ["5.2", "LTE", "CELLALGOSWITCH", "InterFreqIdleMlbSwitch", "Idle dedicated-priority transfer", "T320 + SIB5 NORMAL + idle-allowed MlbTargetInd", "§5.1.1.5"]),
-        ("row", ["5.3", "LTE", "CELLALGOSWITCH", "InterFreqBlindMlbSwitch", "Blind MLB — leave OFF unless containment proven", "BlindHoPriority", "p.136"]),
-        ("row", ["5.4", "LTE", "CELLMLB", "MlbTriggerMode", "UE_NUMBER_ONLY typical for user-experience equalisation", "PRB_ONLY skips CA UEs", "Table 6-2; §6.5"]),
-        ("row", ["5.5", "LTE", "CELLMLB", "InterFreqUeTrsfType", "SynchronizedUE (connected). IdleUE for idle. PrbMlbSynchronizedUE for PRB.", "Must match trigger mode", "Table 6-2"]),
-        ("row", ["5.6", "LTE", "eval SW", "ActiveUeBasedLoadEvalSw", "ON when frequencies have different bandwidths (Huawei)", "Load model N", "Table 5-5"]),
-        ("row", ["5.7", "LTE", "eval SW", "SpectralEffBasedLoadEvalSw", "ON when SE differs significantly e.g. >30% (Huawei)", "≥10 UL-sync UEs for SE refresh", "Table 5-5"]),
-        ("row", ["5.8", "LTE", "eval SW", "LoadTransferEnhSw", "ON for multi-target / PRB-diff calculation", "Several candidate frequencies", "p.134"]),
-        ("row", ["5.9", "LTE", "eval SW", "CaUserLoadTransferSw", "ON only if CA UEs must be transferable", "Target CA capability ≥ serving on one documented path", "pp.129–136, 157"]),
-        ("row", ["5.10", "LTE", "CELLMLB", "MlbHoCellSelectStrategy", "ONLY_STRONGEST_CELL (Huawei recommended)", "A4/A5 meas success", "Table 6-5 p.159"]),
-        ("row", ["5.11", "LTE", "CELLMLB", "FreqSelectStrategy", "FAIRSTRATEGY / PRIORITYBASED / LOADPRIORITY", "PRIORITYBASED uses MlbFreqPriority + freq penalty", "pp.137, 213"]),
-        ("row", ["5.12", "LTE", "EUTRANINTERNFREQ", "MlbInterFreqHoEventType + MlbTargetInd", "A4 (or A5 if licensed). ALLOWED / WITHOUT_IDLE_MLB / WITHOUT_CONNECT_MLB", "OverlapInd + NoHoFlag for coverage HO remain separate", "pp.28, 129; Table 6-3"]),
-        ("space", 8),
-
-        ("section", "SN-6  Prerequisite functions"),
-        ("heads", H_PRE),
-        ("row", ["6.1", "LTE", "License", "Intra-RAT MLB (+ A5 license if event=A5)", "Present on eNodeB", "Switch ON but no Load HO counters", "pp.142–143"]),
-        ("row", ["6.2", "LTE", "X2 / intra-eNB", "Load exchange for equalisation", "Working", "Without it only offload/blind remains", "§4.1"]),
-        ("row", ["6.3", "LTE", "NRT", "OverlapInd, PERMIT_HO, no PCI conflict", "Valid pairs", "Target never admitted", "pp.27–28"]),
-        ("row", ["6.4", "LTE", "Connected Mode meas", "A4/A5 actually delivered (flags, object cap, SMeasure, gap)", "See Connected SN-6", "Trigger with 0 meas success", "p.139"]),
-        ("row", ["6.5", "LTE", "CELLMLB", "NCellHoSuccRateThld", "Pair HO success ≥ thd", "Failed pair is not a target — fix RF/HO first", "p.27"]),
-        ("row", ["6.6", "LTE", "HW / transport", "LowLoad / MediumLoad", "High/OverLoad not a normal equalisation target", "Fig 4-3", "pp.17–18"]),
-        ("row", ["6.7", "LTE", "Idle SIB5", "NORMAL if idle MLB ON", "UNDELIVER cannot be idle target", "IM §5.3.2.3", "Idle sheet"]),
-        ("row", ["6.8", "LTE", "MAE counters", "≥1×15-min period if smart thd ON", "Required for NCellTrigThldSmartOptAlgoSw", "§§5.1.3.4, 6.5.3.4", "pp.46, 223"]),
-        ("space", 8),
-
-        ("section", "SN-7  Mutually impacted"),
-        ("heads", H_IMP),
-        ("row", ["7.1", "LTE", "User-number connected MLB", "Fixed-proportion idle MLB", "Do not combine — ping-pong", "Keep fixed-proportion OFF", "§5.4.2.2"]),
-        ("row", ["7.2", "LTE", "PRB_USAGE MLB", "PRB_VALUATION MLB", "Mutually exclusive in the same mode", "Pick one if PRB used", "pp.216, 245"]),
-        ("row", ["7.3", "LTE", "MLB", "FreqPri reverse target", "Ping-pong [CM] p.303", "MlbBasedFreqPriHoSwitch + no reverse pair", "CM Table 11-7"]),
-        ("row", ["7.4", "LTE", "MLB", "Carrier shutdown / deep dormancy", "Target set and gain change", "Coordinate ES", "pp.153–156"]),
-        ("row", ["7.5", "LTE", "Connected offload active", "Flexible CA combination", "CA avoids a cell under connected offload", "Expected — pp.168, 233", "CA"]),
-        ("row", ["7.6", "LTE", "Smart learned thds", "BW change / CA-eval SW / upgrade / board / cell deactivation", "Forced relearn or stale thd", "Do not treat learned thds as daily manual MOD targets", "pp.29–31, 89–91"]),
-        ("space", 8),
-
-        ("section", "SN-8  Relation with Other Feature"),
-        ("heads", H_IMP),
-        ("row", ["8.1", "LTE", "Idle Mode", "Idle MLB method = dedicated prio + T320", "SIB5 NORMAL; MlbTargetInd idle allow/forbid", "Idle sheet SN-5/11", "§5.1.1.5"]),
-        ("row", ["8.2", "LTE", "Connected Mode", "HO engine A4/A5, meas, admit, punish", "ONLY_STRONGEST_CELL + A4 typical co-sited", "Connected sheet SN-5", "§6.1.1.5.2"]),
-        ("row", ["8.3", "LTE", "Carrier Aggregation", "PCC transfer vs SCell scheduling", "PRB MLB skips CA UEs; user-number needs CaUserLoadTransferSw", "pp.129–136, 157, 207–215", "CA document"]),
-        ("row", ["8.4", "LTE", "Energy saving", "Mutual target exclusion", "No MLB onto a sleeping carrier", "pp.153–156", "ES"]),
-        ("row", ["8.5", "LTE", "Inter-RAT MLB", "Separate document", "Out of this three-book set", "Do not use this sheet for IRAT", "IRAT MLB book"]),
-        ("space", 8),
-
-        ("section", "SN-9  License Requirements"),
-        ("heads", ["Function", "RAT", "Switch / function", "License (verify in MAE)", "If missing", "Notes", "Chart / Doc Ref"]),
-        ("row", ["Connected/idle equalisation", "LTE", "InterFreqMlbSwitch / IdleMlbSwitch", "Intra-RAT Mobility Load Balancing", "No Load HO / dedicated-pri counters", "Core", "Table 6-2"]),
-        ("row", ["MLB event A5", "LTE", "MlbInterFreqHoEventType=A5", "Intra-LTE Load Balancing for Non-cosited Cells", "Stay on A4", "pp.142–143", "Table 6-3"]),
-        ("row", ["Blind MLB", "LTE", "InterFreqBlindMlbSwitch", "Blind option if sold separately", "Blind unavailable", "Higher risk without load exchange", "pp.167, 231"]),
-        ("row", ["CA user transfer", "LTE", "CaUserLoadTransferSw", "CA + MLB CA-transfer option — verify", "CA UEs filtered", "p.157", "pp.129–136"]),
-        ("row", ["Smart n-cell thd", "LTE", "NCellTrigThldSmartOptAlgoSw", "SON/intelligent MLB option + MAE 15-min counters", "No learned pair thd", "7-day learn / 7-day refresh", "pp.29–31"]),
-        ("space", 8),
-
-        ("section", "SN-10  All Parameter List  (sequence / connected order)"),
-        ("note", "Ch.8 of the MLB book does not print full ranges/defaults — use the version-matched parameter reference (p.299). Conditional Parameter = other-feature relation."),
+        ("section", "Parameters in procedure order"),
         ("heads", H_PAR),
-        ("row", ["1", "LTE", "CELLALGOSWITCH", "InterFreqMlbSwitch / InterFreqIdleMlbSwitch / InterFreqBlindMlbSwitch", "Master bits", "License", "Table 6-2"]),
-        ("row", ["2", "LTE", "CELLMLB", "MlbTriggerMode / PrbLoadCalcMethod / InterFreqUeTrsfType / InterFreqMLBRanShareMode", "Mode", "Must match algorithm", "Table 6-2 / 6-18"]),
-        ("row", ["3", "LTE", "eval SW", "ActiveUeBasedLoadEvalSw / SpectralEffBasedLoadEvalSw / LoadTransferEnhSw / CaUserLoadTransferSw", "Load model and CA", "Table 5-5; unequal BW / SE>30% / CA", "pp.25–27, 129–136"]),
-        ("row", ["4", "LTE", "CELL / CELLMLB", "CellCapacityScaleFactor / MuMimoPrbStatOptSwitch / MultiRruMode", "Capability scale", "Do not fake bandwidth with scale", "§5.1.1"]),
-        ("row", ["5", "LTE", "CELLMLB", "MlbTrigJudgePeriod / InterFreqLoadEvalPrd", "Timing", "5 s + MaxUe≥40 warning", "p.128, p.136"]),
-        ("row", ["6", "LTE", "CELLMLB", "InterFreqMlbUeNumThd / MlbUeNumOffset / InterFreqIdleMlbUeNumThd", "UE-number trigger", "Enter = thd+offset; leave = thd", "p.128; Table 5-2"]),
-        ("row", ["7", "LTE", "CELLMLB", "InterFreqMlbThd / InterFreqMlbUlThd / LoadOffset / MlbMinUeNumThd(+Offset)", "PRB trigger family", "Supplement only; no CA UE", "§6.5.1"]),
-        ("row", ["8", "LTE", "CELLMLB", "LoadDiffThd / InterFreqOffloadOffset / InterFrqUeNumOffloadOffset / InterFIdleUeNumOffloadOfs", "Equalise vs offload slack", "Offload if load exchange missing", "§4.1"]),
-        ("row", ["9", "LTE", "CELLMLB", "MlbMaxUeNum / MlbIdleUeNumAdjFactor", "Transfer volume", "Never ≥40 with 5 s eval", "p.136"]),
-        ("row", ["10", "LTE", "CELLMLB", "FreqSelectStrategy / MlbFreqPriority / MlbFreqUlPriority", "Freq pick + UL priority for UL PRB MLB", "FAIR / PRIORITY / LOAD", "pp.137, 213"]),
-        ("row", ["11", "LTE", "CELLMLB", "MlbHoCellSelectStrategy", "ONLY_STRONGEST_CELL recommended", "Avoid coverage bounce", "Table 6-5 p.159"]),
-        ("row", ["12", "LTE", "EUTRANINTERNFREQ", "MlbTargetInd / MlbInterFreqHoEventType / IfMlbThdRsrpOffset", "Target allow + A4/A5 + offset", "WITHOUT_* blocks one MLB mode", "pp.28, 129, 137"]),
-        ("row", ["13", "LTE", "EUTRANINTERNFREQ / NCELL", "OverlapInd / NoHoFlag / AggregationAttribute / LoadBalanceNCellScope", "Relation eligibility", "Coverage HO ≠ MLB target", "pp.27–28"]),
-        ("row", ["14", "LTE", "CELLMLB", "NCellHoSuccRateThld / CellPunishPrdNum / FreqPunishPrdNum / PunishJudgePrdNum", "Admit / penalty", "Do not lower HO SR thd to force MLB", "p.29"]),
-        ("row", ["15", "LTE", "CELLMLBUESEL", "UeSelectArp/Prb/DlMcs/QciPrio + thds / SnrBasedUeSelectionMode", "Who is movable", "Protect emergency / QCI policy", "pp.130–135"]),
-        ("row", ["16", "LTE", "CELLMLB", "MlbHoInProtectTimer / MlbUeSelectPunishTimer / MlbHoInProtectMode", "Re-MLB protect", "Ping-pong guard", "pp.130–135"]),
-        ("row", ["17", "LTE", "CELLOPHOCFG", "MLB_HO_FORBID_SW", "No MLB meas if UE > ~30 km/h", "NLOS misclassify", "pp.136–141"]),
-        ("row", ["18", "LTE", "EUTRANINTERNFREQ", "InterFreqMlbBlindHo / BlindHoPriority", "Blind path", "Containment required", "p.136"]),
-        ("row", ["19", "LTE", "EUTRANINTERNFREQ", "InterFreqMlbDlPrbOffset / UlPrbOffset", "Per-freq PRB bias", "PRB mode only", "p.210"]),
-        ("row", ["20", "LTE", "CELLPRBVALMLB / MlbQciGroup", "PrbValMlbTrigThd / AdmitThd / FilterFactor / min QoS bit rates", "PRB-evaluation MLB", "Exclusive vs PRB_USAGE", "Table 6-25; §5.8.1"]),
-        ("row", ["21", "LTE", "smart", "NCellTrigThldSmartOptAlgoSw + LocalToNCell / NToLocal UE/PRB thds", "7-day learn / 7-day refresh", "Need 15-min counter subscription", "pp.29–31, 89–91"]),
-        ("row", ["22", "LTE", "RRCCONNSTATETIMER / EnhancedMlb", "T320ForLoadBalance / DediPrioManageOnLowLoadSw", "Idle dedicated prio life / hold", "Idle MLB", "§5.1.1.5; Table 5-10"]),
-        ("row", ["23", "LTE", "QCI / SPID relation", "QCIEUTRANRELATION.MobilityTargetInd / CellQciPara.QciAlgoSwitch", "QCI/SPID target prohibition", "Connected Mode QCI policy", "pp.130–135"]),
+        ("row", ["1", "EUTRANINTERNFREQ", "FREQ_MEAS_FLAG / HO_TRG_FREQ_FORBID_MEAS_FLAG", "Whether the frequency is measured / allowed as HO target", "Silent no-HO if wrong", "§4.1.4.1.2"]),
+        ("row", ["2", "CELLUEMEASCONTROLCFG", "MaxNonIntraMeasObjNum / MaxEutranFddMeasFreqNum", "How many objects can be delivered", "Random drop if over limit", "Tables 4-3 / 4-4"]),
+        ("row", ["3", "HOMEASCOMM", "SMeasure", "Skip inter-freq meas when serving is strong", "Can hide A4", "§4.1.5"]),
+        ("row", ["4", "INTERFREQHOGROUP", "A1/A2 hyst + TTT + correct A2 family", "Coverage start/stop", "Wrong family = wrong HO", "Tables 5-3, 5-10"]),
+        ("row", ["5", "INTERFREQHOGROUP", "A3 / A4 / A5 thresholds, hyst, TTT", "Relative vs absolute vs dual-condition HO", "A4 TTT ≠ 5120 ms if FreqPri/MLB A4 needed", "Tables 5-16, 5-22, 5-18"]),
+        ("row", ["6", "EUTRANINTERNFREQ", "MlbInterFreqHoEventType + IfMlbThdRsrpOffset + FreqPriHoA4ThldRsrpOffset", "Which event MLB/FreqPri uses, per-freq A4 offset", "A5 needs non-cosited MLB license", "MLB Table 6-3"]),
+        ("row", ["7", "FreqPri switches", "MlbBasedFreqPriHoSwitch / LoadTriggerFreqPriHoSwitch / FreqPriInHoProtectionTimer", "Who owns heavy load; bounce-back guard", "No reverse MLB pair", "Table 11-7 ; p.300"]),
         ("space", 8),
-
-        ("section", "SN-11  Final MML Command for activations  (maintain sequence)"),
+        ("section", "How Connected locks to the other two books"),
+        ("heads", H_STEP),
+        ("row", ["← Idle", "Dedicated prio already discarded", "Idle only set the serving cell of this session", "Align idle thresholds with A1/A5", "Sheet 2", "Idle §5.1.3.1"]),
+        ("row", ["→ MLB", "This book is the HO engine; MLB is the load brain", "ONLY_STRONGEST_CELL and A4 live in the MLB book", "LOAD_COVERAGE_MEAS_DECOUPLE_SW if coverage meas already on", "Sheet 4", "MLB Table 6-5 ; p.139"]),
+        ("space", 8),
+        ("section", "Connected activation sequence"),
         ("heads", H_MML),
-        ("row", ["0", "—",
-                 "LST CELLALGOSWITCH: LocalCellId=<x>; LST CELLMLB: LocalCellId=<x>; LST EUTRANINTERNFREQ: LocalCellId=<x>; LST CELLMLBUESEL: LocalCellId=<x>; check Intra-RAT MLB license;",
-                 "MAE license + version-matched parameter reference (Ch.8 p.299)", "Dump current. Feature book does not list every default/range.", "Baseline", "Attach LST to the change record"]),
-        ("row", ["1", "EUTRANINTERNFREQ",
-                 "MOD EUTRANINTERNFREQ: LocalCellId=<x>, DlEarfcn=<earfcn>, MlbTargetInd=ALLOWED, MlbInterFreqHoEventType=A4;",
-                 "OverlapInd valid; NoHoFlag=PERMIT_HO_ENUM; FREQ_MEAS_FLAG; not forbid-meas. A5 only with non-cosited MLB license.",
-                 "Allow this frequency as MLB target. Use WITHOUT_CONNECT_MLB / WITHOUT_IDLE_MLB to block one mode.",
-                 "Target + event", "pp.28, 129; Table 6-3"]),
-        ("row", ["2", "eval related MO",
-                 "Enable ActiveUeBasedLoadEvalSw, SpectralEffBasedLoadEvalSw, LoadTransferEnhSw as required (unequal BW / SE e.g. >30% / multi-target);",
-                 "Confirm exact bit/MO names in MAE of the running version", "Huawei Table 5-5. Do this before chasing UE-number thd.", "Load model", "pp.47–48"]),
-        ("row", ["3", "CELLMLB",
-                 "MOD CELLMLB: LocalCellId=<x>, MlbTriggerMode=UE_NUMBER_ONLY, InterFreqUeTrsfType=SynchronizedUE, MlbHoCellSelectStrategy=ONLY_STRONGEST_CELL, FreqSelectStrategy=<FAIRSTRATEGY|PRIORITYBASED|LOADPRIORITY>;",
-                 "InterFreqMlbSwitch will be ON", "ONLY_STRONGEST_CELL is Huawei-recommended (Table 6-5 p.159).", "Mode + pick strategy", "Table 6-2"]),
-        ("row", ["4", "CELLMLB",
-                 "MOD CELLMLB: LocalCellId=<x>, InterFreqMlbUeNumThd=<thd>, MlbUeNumOffset=<ofs>, MlbMaxUeNum=<n>, MlbTrigJudgePeriod=<p>, InterFreqLoadEvalPrd=<prd>;",
-                 "Do not use InterFreqLoadEvalPrd=5 s with MlbMaxUeNum≥40 (p.136). Calibrate thd after ActiveUe/SE ON.",
-                 "Trigger and volume. Enter = thd+offset; leave = thd.", "UE-number trigger", "p.128, p.136"]),
-        ("row", ["5", "CA related",
-                 "Enable CaUserLoadTransferSw only if CA UEs must be moved and target CA capability conditions are met;",
-                 "CA license + combination plan", "If OFF, CA UEs treating the cell as PCell/SCell are filtered (p.157).", "CA transfer", "pp.129–136"]),
-        ("row", ["6", "CELLALGOSWITCH",
-                 "MOD CELLALGOSWITCH: LocalCellId=<x>, MlbAlgoSwitch=InterFreqMlbSwitch-1&InterFreqIdleMlbSwitch-1;",
-                 "Steps 1–4 done. Blind bit remains 0 unless designed. Idle also needs T320 and SIB5 NORMAL.",
-                 "Master bits last (or same window after targets).", "Activate MLB", "Table 6-2"]),
-        ("row", ["7", "RRCCONNSTATETIMER",
-                 "MOD RRCCONNSTATETIMER: T320ForLoadBalance=<T320>;",
-                 "Idle MLB ON", "SPID/PCC T320 remains 180 min.", "Dedicated-priority lifetime", "§5.1.1.5"]),
-        ("row", ["8", "CELLMLBUESEL",
-                 "MOD CELLMLBUESEL: LocalCellId=<x>; apply QCI/ARP/emergency protection; avoid selecting edge UEs only for PRB;",
-                 "ONLY_STRONGEST_CELL already on CELLMLB", "UE selection policy.", "UE pick", "pp.130–135"]),
-        ("row", ["9", "Verify",
-                 "L.HHO.InterFreq.Load.Prep/Exec/Succ and UeNumLoad.*; HighLoad.Dur/Num; Load.Meas/MeasSucc; ActiveUser.DL; PCell/SCell; PRB; Thrp.bits/Time.DL; idle DedicatedPri. SON logs: Inter-Frequency Handover Statistics; Inter-Frequency Idle Mode Release Statistics.",
-                 "Subscribe 15-min counters if smart thd is used. When both PRB and UE-number MLB are on: PRB HO ≈ Load − UeNumLoad (§6.5.4.3).",
-                 "Tables 6-6, 6-21, 6-28 pp.164, 227–228, 248–249. Log contents §§6.1.4.2, 6.5.4.2.",
-                 "Counters + SON logs", "Close the sequence"]),
+        ("row", ["0", "LST", "Dump INTERFREQHOGROUP, EUTRANINTERNFREQ, NCELL, CELLHOPARACFG, HOMEASCOMM", "Read-only", "Do not paste example −85/−87/−103 dBm", "§11.4.1.2"]),
+        ("row", ["1", "EUTRANINTERNFREQ", "Meas flag on; forbid-meas off for required HO targets", "NRT exists", "Most silent A4 failures are flags/NRT, not dBm", "§4.1.4.1.2"]),
+        ("row", ["2", "CELLUEMEASCONTROLCFG", "Object cap ≥ number of inter-frequency objects this cell must measure", "Frequency plan known", "Otherwise equal-prio freqs drop at random", "p.125"]),
+        ("row", ["3", "INTERFREQHOGROUP", "Coverage A1/A2/A5 from MR, correct A2 family", "Coverage design first", "Rescue before offload", "Tables 5-3, 5-10"]),
+        ("row", ["4", "INTERFREQHOGROUP", "A4 from MR; better than coverage A2; TTT not 5120 ms if FreqPri/MLB A4 is required", "Step 3 done", "Main absolute target gate", "Table 4-9"]),
+        ("row", ["5", "EUTRANINTERNFREQ", "MlbInterFreqHoEventType = A4 (A5 only with non-cosited MLB license)", "MLB will be used", "Co-sited FDD typically A4", "MLB Table 6-3"]),
+        ("row", ["6", "FreqPri coordination", "MlbBasedFreqPriHoSwitch / LoadTrigger / non-zero incoming protect timer; no reverse MLB pair", "Confirm exact MO name in MAE", "Stops FreqPri fighting MLB", "p.303"]),
+    ]
+
+
+def mlb():
+    return [
+        ("section", "Procedure chart"),
+        ("flow", ["Eval load N/C", "Trigger thd + offset", "Admit target", "Select UEs", "A4/A5 HO or idle release", "Penalty / stop"],
+         "MLB Fig 3-1. Equalisation vs offload: Fig 4-1. Idle vs connected transfer: Figs 4-4 / 4-5. Load = N/C. Difference = (Load_s − Load_t) / Load_s."),
+        ("space", 6),
+        ("section", "Step by step"),
+        ("heads", H_STEP),
+        ("row", ["1", "Choose equalisation or offload", "Peer load available or not", "Equalisation when source and target load are known. Offload if not.", "Equalisation is safer when X2 / intra-eNB load exists.", "Fig 4-1 §4.1"]),
+        ("row", ["2", "Choose the load indicator", "UE number vs PRB vs HW/transport", "UE number ≈ short non-GBR. PRB ≈ GBR / sustained. HW/transport = Low/Med/High/OverLoad.", "PRB MLB does not move CA UEs and is burst-sensitive.", "Fig 4-2, Fig 4-3"]),
+        ("row", ["3", "Compute user-number load", "Load = N/C", "ActiveUeBasedLoadEvalSw uses DL-buffer UEs. SpectralEffBasedLoadEvalSw uses PRB, scale, GBR, SE (refresh 1 min if ≥10 UL-sync UEs).", "Raw UE-count on unequal bandwidth can reduce DL throughput.", "§5.1.1 ; Table 5-5 ; §6.1.2.2"]),
+        ("row", ["4", "Trigger connected UE-number MLB", "InterFreqMlbUeNumThd + MlbUeNumOffset + MlbTrigJudgePeriod", "Enter when N ≥ thd+offset for the whole judge period. Leave when N < thd.", "Mode UE_NUMBER_ONLY + SynchronizedUE.", "Table 6-2 ; p.128"]),
+        ("row", ["5", "Admit the target cell / frequency", "MlbTargetInd, OverlapInd, NoHoFlag, HO SR, HW/transport", "WITHOUT_IDLE_MLB / WITHOUT_CONNECT_MLB block one mode. Low/Med HW+transport. Not punished.", "Failed pair is not a target — fix RF/HO first (NCellHoSuccRateThld).", "pp.27–29"]),
+        ("row", ["6", "Select UEs", "CELLMLBUESEL + protect timers", "UL-sync, not emergency, SPID/QCI, optional ARP/PRB/MCS/SNR. ONLY_STRONGEST_CELL recommended.", "Otherwise the UE is coverage-HO’d back.", "Table 6-5 p.159"]),
+        ("row", ["7", "Limit volume and pick frequency", "MlbMaxUeNum ; FAIR / PRIORITY / LOADPRIORITY", "min(needed delta, hyst, max UE). LoadTransferEnhSw changes multi-target math.", "5 s eval + MlbMaxUeNum ≥ 40 over-transfers.", "pp.134–137"]),
+        ("row", ["8", "Execute connected transfer", "A4 or A5 HO (FDD); optional blind", "Redirection generally not used in FDD. A5 needs extra license.", "Blind only with known containment.", "§6.1.1.5.2"]),
+        ("row", ["9", "Execute idle transfer (if enabled)", "RRC release + dedicated prio + T320", "Class order NG-RAN > E-UTRAN low-load > E-UTRAN high-load > UTRAN > GERAN.", "Affects the next session only.", "§5.1.1.5"]),
+        ("row", ["10", "Stop / punish", "CellPunishPrdNum × eval period", "Target reject (no radio resource) punishes the pair.", "Do not lower HO-success threshold to force MLB.", "p.29"]),
+        ("space", 8),
+        ("section", "Huawei cautions"),
+        ("heads", H_NOTE),
+        ("row", ["1", "ActiveUe when bandwidths differ; SpectralEff when SE differs a lot (e.g. >30%)", "Otherwise N/C is unfair across 15 vs 20 MHz.", "Turn load-model switches on before chasing the UE-number threshold.", "Step 3", "Table 5-5"]),
+        ("row", ["2", "ONLY_STRONGEST_CELL", "Recommended cell-pick strategy.", "Without it, coverage HO bounces the UE back.", "Step 6", "Table 6-5"]),
+        ("row", ["3", "Do not use InterFreqLoadEvalPrd = 5 s with MlbMaxUeNum ≥ 40", "Over-transfer.", "Lower volume or lengthen eval.", "Step 7", "p.136"]),
+        ("row", ["4", "PRB-usage MLB skips CA UEs; gain dies when CA penetration ≳ 60%", "No experience fairness; bursty.", "Use as a supplement, not the main user-experience equaliser.", "Step 2", "Fig 6-2 ; §6.5"]),
+        ("row", ["5", "Smart neighbour thds: 7 days collect, then refresh every 7 days", "Aggressive first-week seeds: extra CPU/HO and up to 5% TP swing.", "Need 15-min counter subscription. Do not treat learned thds as daily manual MOD targets.", "Step 4", "pp.29–31, 162"]),
+        ("row", ["6", "Fixed-proportion idle + user-number connected MLB = ping-pong", "Adaptive-proportion idle not recommended without Huawei support.", "Keep that pair off together.", "Step 9", "§5.4.2.2 ; §5.5.2.1"]),
+        ("row", ["7", "MLB and energy saving change each other’s targets", "A sleeping cell must not remain an MLB / high idle target.", "Coordinate ES.", "Step 5", "pp.153–156"]),
+        ("space", 8),
+        ("section", "What MLB gives / where it stops"),
+        ("heads", ["Type", "Item", "Document statement", "Condition", "User impact", "Source"]),
+        ("row", ["Gives", "True load equalisation", "Uses source and target load to reduce the difference", "Load exchange available", "Safer than blind offload", "Fig 4-1"]),
+        ("row", ["Gives", "Idle + connected pair", "Idle steers next access; connected moves now", "T320 vs HO", "Idle has less gap/HO cost", "Figs 4-4 / 4-5"]),
+        ("row", ["Stops", "Cannot fix RF, coverage, or band-capability mismatch", "Gain falls when coverage, UE band or PLMN differ", "p.39, 141, 214", "Not a substitute for RF", "§6.1.2.2"]),
+        ("row", ["Stops", "Blind offload has no target-load check", "Can overload a cell that only looks low-load", "pp.167, 231", "Leave blind off unless designed", "Offload path"]),
+        ("space", 8),
+        ("section", "Parameters in procedure order"),
+        ("heads", H_PAR),
+        ("row", ["1", "CELLALGOSWITCH", "InterFreqMlbSwitch / IdleMlbSwitch / BlindMlbSwitch", "Master bits", "License first. Blind off unless designed.", "Table 6-2"]),
+        ("row", ["2", "CELLMLB", "MlbTriggerMode / InterFreqUeTrsfType", "UE_NUMBER_ONLY + SynchronizedUE typical for experience equalisation", "Must match. PRB_ONLY skips CA UEs.", "Table 6-2"]),
+        ("row", ["3", "eval SW", "ActiveUeBasedLoadEvalSw / SpectralEffBasedLoadEvalSw / LoadTransferEnhSw / CaUserLoadTransferSw", "Load model and CA", "Table 5-5 ; CA pp.129–136", "pp.25–27"]),
+        ("row", ["4", "CELLMLB", "InterFreqMlbUeNumThd / Offset / Idle thd / MaxUeNum / eval periods", "When to enter/leave and how many UEs", "Enter = thd+offset; leave = thd. Never 5 s + MaxUe≥40.", "p.128, p.136"]),
+        ("row", ["5", "CELLMLB", "MlbHoCellSelectStrategy / FreqSelectStrategy", "ONLY_STRONGEST_CELL ; FAIR / PRIORITY / LOAD", "Avoid coverage bounce", "Table 6-5"]),
+        ("row", ["6", "EUTRANINTERNFREQ", "MlbTargetInd / MlbInterFreqHoEventType / IfMlbThdRsrpOffset", "Who may be a target; A4/A5; offset", "WITHOUT_* blocks one MLB mode", "pp.28, 129"]),
+        ("row", ["7", "CELLMLBUESEL + punish / protect timers", "Who is movable ; re-MLB guard", "Protect emergency / QCI policy", "Do not pick edge UEs only for PRB", "pp.130–135"]),
+        ("row", ["8", "RRCCONNSTATETIMER / EnhancedMlb", "T320ForLoadBalance / DediPrioManageOnLowLoadSw", "Idle dedicated-prio life / hold", "Idle MLB path", "§5.1.1.5 ; Table 5-10"]),
+        ("space", 8),
+        ("section", "How MLB locks to the other two books"),
+        ("heads", H_STEP),
+        ("row", ["← Idle", "Idle method = dedicated prio + T320 + SIB5 NORMAL", "MlbTargetInd can forbid idle targeting without blocking coverage HO", "UNDELIVER cannot be an idle target", "Sheet 2", "§5.1.1.5"]),
+        ("row", ["← Connected", "HO engine A4/A5, meas flags, object cap, SMeasure, admission", "Trigger with 0 meas success = Connected sheet, not a thd problem", "ONLY_STRONGEST_CELL + A4 typical co-sited", "Sheet 3", "§6.1.1.5.2"]),
+        ("space", 8),
+        ("section", "MLB activation sequence"),
+        ("heads", H_MML),
+        ("row", ["0", "LST + license", "Dump CELLALGOSWITCH, CELLMLB, EUTRANINTERNFREQ, CELLMLBUESEL. Confirm Intra-RAT MLB license.", "MAE + parameter reference (Ch.8 p.299)", "Book does not list every default", "p.299"]),
+        ("row", ["1", "EUTRANINTERNFREQ", "MlbTargetInd=ALLOWED, event A4, overlap and PERMIT_HO already valid", "Connected meas flags already correct", "WITHOUT_CONNECT_MLB / WITHOUT_IDLE_MLB to block one mode", "pp.28, 129"]),
+        ("row", ["2", "Load model", "ActiveUe / SpectralEff / LoadTransferEnh as required (unequal BW / SE e.g. >30% / multi-target)", "Confirm bit names in MAE", "Do this before chasing UE-number thd", "Table 5-5"]),
+        ("row", ["3", "CELLMLB", "UE_NUMBER_ONLY, SynchronizedUE, ONLY_STRONGEST_CELL, frequency strategy", "Targets already allowed", "Table 6-5 recommended pick", "Table 6-2"]),
+        ("row", ["4", "CELLMLB", "UE-number thd/offset, MaxUeNum, judge/eval periods from live load — not 5 s + MaxUe≥40", "Load model ON", "Enter = thd+offset; leave = thd", "p.128, p.136"]),
+        ("row", ["5", "CA / UE pick", "CaUserLoadTransferSw only if CA UEs must move. Then CELLMLBUESEL policy.", "CA plan", "If OFF, CA UEs stay filtered", "p.157"]),
+        ("row", ["6", "Master bits last", "InterFreqMlbSwitch-1 and IdleMlbSwitch-1 if idle transfer is required. Blind stays 0.", "Steps 1–4 done. Idle also needs T320 and SIB5 NORMAL.", "Activate after targets exist", "Table 6-2"]),
+        ("row", ["7", "Verify", "Load HO counters (Load vs UeNumLoad), HighLoad Dur/Num, meas success, DL active users, throughput, idle DedicatedPri. SON: Inter-Frequency Handover Statistics ; Idle Mode Release Statistics.", "15-min counters if smart thd is used", "When both PRB and UE-number MLB are on: PRB HO ≈ Load − UeNumLoad", "Tables 6-6, 6-21 ; §§6.1.4.2, 6.5.4.2"]),
+    ]
+
+
+def activate():
+    return [
+        ("section", "One sequence across all three books"),
+        ("note", "Do Idle camping first (next access layer), then Connected coverage and A4 (HO engine), then MLB load brain last. LST before every MOD. Placeholders: LocalCellId=<x>, DlEarfcn=<earfcn>. Confirm enums in MAE. Example dBm in the Connected book are not design values."),
+        ("flow", ["LST baseline", "Idle SIB / priority / search", "Connected flags + coverage", "A4 gate from MR", "MLB target + load model", "MLB thd + master bit + T320"],
+         "Activation order — not the sample-file MML"),
+        ("space", 6),
+        ("heads", ["Step", "Book", "MO", "What to do", "Stop if this is missing", "Source"]),
+        ("row", ["0", "All", "LST *", "Dump current CELLRESEL, EUTRANINTERNFREQ, NCELL, INTERFREQHOGROUP, CELLHOPARACFG, HOMEASCOMM, CELLALGOSWITCH, CELLMLB, CELLMLBUESEL, RRCCONNSTATETIMER. Check Intra-RAT MLB license.", "No baseline = no rollback", "MAE"]),
+        ("row", ["1", "Idle", "CELLRESEL", "Serving common priority. CFG search. SIntraSearch > SNonIntraSearch (example SNonIntraSearch=10). Capacity/hotspot ranks above coverage layer.", "SIB3 not planned", "Idle §5.4.1.1 ; MLB §5.1.2.1"]),
+        ("row", ["2", "Idle", "EUTRANINTERNFREQ", "Every needed EARFCN: CfgInd=CFG, priority, NORMAL (not UNDELIVER), reselection thresholds from MR, MlbTargetInd as designed.", "Frequency missing from SIB5 plan", "Idle §5.1.3.1"]),
+        ("row", ["3", "Idle", "CELLRESEL", "ThrshServLow aligned with later coverage A2/A5 thinking.", "Coverage A2 not yet known — set after step 5 or use current A2", "Idle Tables 5-3 / 5-4"]),
+        ("row", ["4", "Connected", "EUTRANINTERNFREQ + NCELL", "Meas flag on; forbid-meas off for HO targets; symmetric NRT; NoHoFlag PERMIT; no PCI conflict.", "Most silent A4 failures start here", "Connected §4.1.4"]),
+        ("row", ["5", "Connected", "CELLUEMEASCONTROLCFG + HOMEASCOMM", "Object cap ≥ needed freqs. SMeasure must not hide A4.", "Equal-prio random drop / silent A4", "p.125 ; §4.1.5"]),
+        ("row", ["6", "Connected", "INTERFREQHOGROUP", "Coverage A1/A2/A5 from MR, correct A2 family. Then A4 better than that A2. A4 TTT ≠ 5120 ms if FreqPri or MLB A4 is required.", "Do not paste −85/−87/−103 dBm from the book", "§11.4.1.2 ; Table 4-9"]),
+        ("row", ["7", "Connected", "FreqPri coordination", "If FreqPri is used with MLB: MlbBasedFreqPriHoSwitch / LoadTrigger as designed; incoming protect timer non-zero; no reverse MLB pair.", "Ping-pong A↔B", "p.303"]),
+        ("row", ["8", "MLB", "EUTRANINTERNFREQ", "MlbTargetInd and MlbInterFreqHoEventType=A4 (A5 only with non-cosited MLB license).", "Overlap / PERMIT_HO / meas already done in steps 4–6", "MLB pp.28, 129 ; Table 6-3"]),
+        ("row", ["9", "MLB", "Load-model switches", "ActiveUe if bandwidths differ. SpectralEff if SE differs a lot (e.g. >30%). LoadTransferEnh if multi-target.", "Do this before the UE-number threshold", "Table 5-5"]),
+        ("row", ["10", "MLB", "CELLMLB", "UE_NUMBER_ONLY, SynchronizedUE, ONLY_STRONGEST_CELL, frequency strategy, thd/offset/MaxUeNum/periods. Never 5 s eval + MaxUe ≥ 40.", "Load model from step 9", "Table 6-2, 6-5 ; p.136"]),
+        ("row", ["11", "MLB + Idle", "CELLALGOSWITCH + T320", "Master MLB bits last. Idle bit only if SIB5 NORMAL and T320 set. Blind bit stays 0 unless containment is proven.", "License + steps 1–10", "Table 6-2"]),
+        ("row", ["12", "All", "Verify after SI delay", "Idle: wait next SI modification period; dedicated-pri counters. Connected: Coverage / FreqPri HO SR. MLB: Load HO, meas success, HighLoad, DL TP, SON handover / idle-release logs.", "Same 15-min as the change is too early for idle", "Idle §7.1.3 ; MLB Tables 6-6, 6-21"]),
+        ("space", 8),
+        ("section", "License reminders (confirm exact names in MAE)"),
+        ("heads", ["No.", "License / package", "What it enables", "If missing", "Where used", "Source"]),
+        ("row", ["1", "Basic idle + coverage A1–A5", "Usually in the LTE eNodeB package", "If missing, nothing else in this file will look right", "Sheets 2–3", "—"]),
+        ("row", ["2", "Intra-RAT Mobility Load Balancing", "Connected and idle MLB bits", "Switch ON but Load HO / DedicatedPri counters stay 0", "Sheet 4", "MLB Table 6-2"]),
+        ("row", ["3", "Intra-LTE Load Balancing for Non-cosited Cells", "Required for MLB event A5", "Stay on A4 without it", "Sheet 3–4", "MLB pp.142–143"]),
+        ("row", ["4", "FreqPri / service-based mobility package", "A1 high-band steering", "Verify the sold name", "Sheet 3", "Ch.11"]),
+        ("row", ["5", "Blind / CA-transfer / SON smart-thd options", "Sold separately in some packages", "Leave off if the license is not present", "Sheet 4", "MLB"]),
+        ("space", 8),
+        ("major", "SymbolShutdownSwitch in the old CSV sample is Symbol Power Saving. It is not a mobility command and is not used here."),
     ]
 
 
 def main():
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     wb = Workbook()
-    # cover on first sheet
-    ws = wb.active
-    ws.title = "tmp"
-    build_sheet(wb, "Mobility Management", "Mobility Management - Detailed Notes", cover_blocks(), tab=BLUE)
-    build_sheet(wb, "Idle Mode Management", "Idle Mode Management - Detailed Notes", idle_blocks(), tab="008000")
-    build_sheet(wb, "Connected Mode", "Mobility Management in Connected Mode - Detailed Notes", connected_blocks(), tab="1F4E79")
-    build_sheet(wb, "Intra-RAT MLB", "Intra-RAT Mobility Load Balancing - Detailed Notes", mlb_blocks(), tab="2E75B6")
+    wb.active.title = "tmp"
+    build_sheet(wb, "Read me", "4G LTE Mobility Management — eRAN21.1 v3.0  |  How to read this file", overview(), BLUE)
+    build_sheet(wb, "1. End-to-end chain", "1. End-to-end chain  |  Idle → Connected → MLB → Idle", chain(), "1F4E79")
+    build_sheet(wb, "2. Idle Mode", "2. Idle Mode Management  |  eRAN21.1 Issue 04  |  Step by step", idle(), "008000")
+    build_sheet(wb, "3. Connected Mode", "3. Mobility Management in Connected Mode  |  eRAN21.1 Issue 08  |  Step by step", connected(), "2E75B6")
+    build_sheet(wb, "4. Intra-RAT MLB", "4. Intra-RAT Mobility Load Balancing  |  eRAN21.1 Issue 10  |  Step by step", mlb(), "C65911")
+    build_sheet(wb, "5. Activation order", "5. Activation order  |  One sequence across the three books", activate(), BLUE)
     del wb["tmp"]
-    wb.properties.title = "4G LTE Mobility Management eRAN21.1 v2.0"
-    wb.properties.subject = "Idle / Connected / Intra-RAT MLB PDF summary — SN-1 to SN-11"
-    wb.properties.version = "2.0"
+    wb.properties.title = "4G LTE Mobility Management eRAN21.1 v3.0"
+    wb.properties.subject = "Step-by-step summary of Idle / Connected / Intra-RAT MLB — not the SN sample"
+    wb.properties.version = "3.0"
     wb.save(OUT)
     print("Wrote", OUT)
 
