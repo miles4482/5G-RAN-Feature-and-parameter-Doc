@@ -1,0 +1,123 @@
+,,,Mobility Management,,,,
+,,,,,,,
+Introduction,,,,,,,
+,,1. State details of feature in this section along with MAJOR notes with highlighted point,,,,,
+,,,,,,,
+,,,,,,,
+,,,,,,,
+Feature 1: Idle Mode Management,,,,,,,
+,,,,,,,
+,** Must list down all activities/things in sequence (A sequence is a set of things/events/Parameters/Switch that come one after another in a connected order),,,,,,
+,,,,,,,
+,SN,Item Name,Remarks,,,,
+,1,Working Principal,Please add chart from doc (right most side of SN)  if there is any for every SN,,,,
+,2,Major highlighted Point,Please add chart from doc (right most side of SN)  if there is any for every SN,,,,
+,3,Benefit and Limitations,Please add chart from doc (right most side of SN)  if there is any for every SN,,,,
+,4,Selection criteria (UE selection/ Trigger Condition/Etc� which fit u need to write point here),Please add chart from doc (right most side of SN)  if there is any for every SN,,,,
+,5,Activation parameter/Switch:   parameter)- Notes,Please add chart from doc (right most side of SN)  if there is any for every SN,,,,
+,,"Core Parameter Seetting, parameter description - Proposed Value - Conditional Parameter 
+ ** Must in Table Format
+** Add more colmn in table if you find useful or if required (No limitations in my table)
+**Conditional Parameter: Disable or activate to enable main activation",Please add chart from doc (right most side of SN)  if there is any for every SN,,,,
+,6,Pre-requiste functions: Parameter/Switch -  Parameter description - Proposed Value - Notes,Please add chart from doc (right most side of SN)  if there is any for every SN,,,,
+,,"Parameter Seetting, parameter description - Proposed Value . 
+** Add more colmn in table if you find useful or if required (No limitations in my table)
+** Must in Table Format",,,,,
+,7,Mutually impacted,Please add chart from doc (right most side of SN)  if there is any for every SN,,,,
+,,"Parameter Seetting, parameter description - Proposed Value . 
+** Add more colmn in table if you find useful or if required (No limitations in my table)
+** Must in Table Format",,,,,
+,8,Relation with Other Feature,Please add chart from doc (right most side of SN)  if there is any for every SN,,,,
+,9,License Requirements,Please add chart from doc (right most side of SN)  if there is any for every SN,,,,
+,,,,,,,
+,,,,,,,
+,10,All Parameter List in Table format for this Feature 1,,,,,
+,,Must in Sequence and connected order,,,,,
+,,**My Assumption (But not limitation.. U can add more col by your self if required),,,,,
+,,"Parameter Name, parameter description - Proposed Value - Conditional Parameter -Notes- More Col (If u find useful or imp)",,,,,
+,, ** Must in Table Format,,,,,
+,,** Add more colmn in table if you find useful or if required (No limitations in my table),,,,,
+,,**Conditional Parameter : Relation with other Feature as stated in feature doc,,,,,
+,,,,,,,
+,11,Final MML Command for activations ( pls maintain sequence),,,,,
+,,,,,,,
+,Parameter Sequence,MO,Activation Value,Conditional Parameter,Remarks,Parameter Description,More Notes
+,1,ENodeBAlgoSwitch,SymbolShutdownSwitch-1,SymbolShutdownSwitch-1 ? Basic Symbol Power Saving starts on supported FDD cells under the eNodeB.,"LTE-only cells do not automatically exit after the feature takes effect. In co-PA/multi-RAT scenarios, exit can occur when a non-LTE carrier exits power saving.",FDD basic symbol power saving switch. Controls real-time PA shutdown for downlink symbols carrying no data.,
+,,,,,,,
+Feature 2: Mobility Management in Connected Mode,,,,,,,
+,,,,,,,
+,** Must list down all activities/things in sequence (A sequence is a set of things/events/Parameters/Switch that come one after another in a connected order),,,,,,
+,,,,,,,
+,SN,Item Name,Remarks,,,,
+,1,Working Principal,Please add chart from doc (right most side of SN)  if there is any for every SN,,,,
+,2,Major highlighted Point,Please add chart from doc (right most side of SN)  if there is any for every SN,,,,
+,3,Benefit and Limitations,Please add chart from doc (right most side of SN)  if there is any for every SN,,,,
+,4,Selection criteria (UE selection/ Trigger Condition/Etc� which fit u need to write point here),Please add chart from doc (right most side of SN)  if there is any for every SN,,,,
+,5,Activation parameter/Switch:   parameter)- Notes,Please add chart from doc (right most side of SN)  if there is any for every SN,,,,
+,,"Core Parameter Seetting, parameter description - Proposed Value - Conditional Parameter 
+ ** Must in Table Format
+** Add more colmn in table if you find useful or if required (No limitations in my table)
+**Conditional Parameter: Disable or activate to enable main activation",Please add chart from doc (right most side of SN)  if there is any for every SN,,,,
+,6,Pre-requiste functions: Parameter/Switch -  Parameter description - Proposed Value - Notes,Please add chart from doc (right most side of SN)  if there is any for every SN,,,,
+,,"Parameter Seetting, parameter description - Proposed Value . 
+** Add more colmn in table if you find useful or if required (No limitations in my table)
+** Must in Table Format",,,,,
+,7,Mutually impacted,Please add chart from doc (right most side of SN)  if there is any for every SN,,,,
+,,"Parameter Seetting, parameter description - Proposed Value . 
+** Add more colmn in table if you find useful or if required (No limitations in my table)
+** Must in Table Format",,,,,
+,8,Relation with Other Feature,Please add chart from doc (right most side of SN)  if there is any for every SN,,,,
+,9,License Requirements,Please add chart from doc (right most side of SN)  if there is any for every SN,,,,
+,,,,,,,
+,,,,,,,
+,10,All Parameter List in Table format for this Feature 2,,,,,
+,,Must in Sequence and connected order,,,,,
+,,**My Assumption (But not limitation.. U can add more col by your self if required),,,,,
+,,"Parameter Name, parameter description - Proposed Value - Conditional Parameter -Notes- More Col (If u find useful or imp)",,,,,
+,, ** Must in Table Format,,,,,
+,,** Add more colmn in table if you find useful or if required (No limitations in my table),,,,,
+,,**Conditional Parameter : Relation with other Feature as stated in feature doc,,,,,
+,,,,,,,
+,11,Final MML Command for activations ( pls maintain sequence),,,,,
+,,,,,,,
+,Parameter Sequence,MO,Activation Value,Conditional Parameter,Remarks,Parameter Description,More Notes
+,1,ENodeBAlgoSwitch,SymbolShutdownSwitch-1,SymbolShutdownSwitch-1 ? Basic Symbol Power Saving starts on supported FDD cells under the eNodeB.,"LTE-only cells do not automatically exit after the feature takes effect. In co-PA/multi-RAT scenarios, exit can occur when a non-LTE carrier exits power saving.",FDD basic symbol power saving switch. Controls real-time PA shutdown for downlink symbols carrying no data.,
+,,,,,,,
+,,,,,,,
+Feature 3: Intra-RAT Mobility Load Balancing,,,,,,,
+\,,,,,,,
+,** Must list down all activities/things in sequence (A sequence is a set of things/events/Parameters/Switch that come one after another in a connected order),,,,,,
+,,,,,,,
+,SN,Item Name,Remarks,,,,
+,1,Working Principal,Please add chart from doc (right most side of SN)  if there is any for every SN,,,,
+,2,Major highlighted Point,Please add chart from doc (right most side of SN)  if there is any for every SN,,,,
+,3,Benefit and Limitations,Please add chart from doc (right most side of SN)  if there is any for every SN,,,,
+,4,Selection criteria (UE selection/ Trigger Condition/Etc� which fit u need to write point here),Please add chart from doc (right most side of SN)  if there is any for every SN,,,,
+,5,Activation parameter/Switch:   parameter)- Notes,Please add chart from doc (right most side of SN)  if there is any for every SN,,,,
+,,"Core Parameter Seetting, parameter description - Proposed Value - Conditional Parameter 
+ ** Must in Table Format
+** Add more colmn in table if you find useful or if required (No limitations in my table)
+**Conditional Parameter: Disable or activate to enable main activation",Please add chart from doc (right most side of SN)  if there is any for every SN,,,,
+,6,Pre-requiste functions: Parameter/Switch -  Parameter description - Proposed Value - Notes,Please add chart from doc (right most side of SN)  if there is any for every SN,,,,
+,,"Parameter Seetting, parameter description - Proposed Value . 
+** Add more colmn in table if you find useful or if required (No limitations in my table)
+** Must in Table Format",,,,,
+,7,Mutually impacted,Please add chart from doc (right most side of SN)  if there is any for every SN,,,,
+,,"Parameter Seetting, parameter description - Proposed Value . 
+** Add more colmn in table if you find useful or if required (No limitations in my table)
+** Must in Table Format",,,,,
+,8,Relation with Other Feature,Please add chart from doc (right most side of SN)  if there is any for every SN,,,,
+,9,License Requirements,Please add chart from doc (right most side of SN)  if there is any for every SN,,,,
+,,,,,,,
+,,,,,,,
+,10,All Parameter List in Table format for this Feature 3,,,,,
+,,Must in Sequence and connected order,,,,,
+,,**My Assumption (But not limitation.. U can add more col by your self if required),,,,,
+,,"Parameter Name, parameter description - Proposed Value - Conditional Parameter -Notes- More Col (If u find useful or imp)",,,,,
+,, ** Must in Table Format,,,,,
+,,** Add more colmn in table if you find useful or if required (No limitations in my table),,,,,
+,,**Conditional Parameter : Relation with other Feature as stated in feature doc,,,,,
+,,,,,,,
+,11,Final MML Command for activations ( pls maintain sequence),,,,,
+,Parameter Sequence,MO,Activation Value,Conditional Parameter,Remarks,Parameter Description,More Notes
+,1,ENodeBAlgoSwitch,SymbolShutdownSwitch-1,SymbolShutdownSwitch-1 ? Basic Symbol Power Saving starts on supported FDD cells under the eNodeB.,"LTE-only cells do not automatically exit after the feature takes effect. In co-PA/multi-RAT scenarios, exit can occur when a non-LTE carrier exits power saving.",FDD basic symbol power saving switch. Controls real-time PA shutdown for downlink symbols carrying no data.,
