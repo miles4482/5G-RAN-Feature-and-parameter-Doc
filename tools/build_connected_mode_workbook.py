@@ -12,6 +12,11 @@ OUT = "/workspace/docs/4G_LTE_Mobility_Management/Connected_Mode_eRAN21.1_Featur
 DOC = "Mobility Management in Connected Mode Feature Parameter Description"
 ISSUE = "Huawei eRAN21.1 Issue 08 (2026-06-30)"
 
+
+def R(feat, sec):
+    """Reference column: Feature ID + document name + issue + section."""
+    return f"{feat}  ·  {DOC}  ·  eRAN21.1 Issue 08  ·  {sec}"
+
 # Sheet names (Excel limit 31 characters)
 S = {
     "toc": "00 Contents",
@@ -69,7 +74,7 @@ def sheet_toc_fix(wb):
     d.bullets([
         "One sheet per feature. Hyperlinks jump to the related feature in one click.",
         "Gridlines are off. Read it like a Word chapter: Introduction → Principle → each sub-group → Combined summary → Parameter list.",
-        "Parameter list: Value column holds only the value. Comments sit in the Comment column.",
+        "Parameter list: Value = value only (blue). Comment = how to use it. Parameter Meaning = what it is. Reference = Feature ID + document name.",
         "Command-example dBm in the book (for example A1/A2 −85/−87 dBm, A4 −103 dBm) are not design values. They are not copied into Value.",
         "FDD Feature IDs from §2.3. TDD uses the TD* equivalent (TDLBFD / TDLOFD) unless the document says FDD only.",
         "LBFD-131111 Mobility between LTE TDD and LTE FDD is covered inside 5.3, 6.2 and 7.2 (inter-duplex = inter-frequency).",
@@ -148,7 +153,14 @@ def sheet_overview(wb):
     d.h1("Parameter list")
     d.para("Chapter 3 has no activation parameter. Open Chapter 4.")
     d.param_heads()
-    d.param_row(1, "—", "—", "—", "Overview only. All switches start in Chapter 4 and the feature chapter.", "—", "Overview", S["b"])
+    d.param_row(
+        1, "—", "—", "—",
+        "Overview only. All switches start in Chapter 4 and the feature chapter.",
+        "—", "Overview",
+        "Chapter 3 has no activation parameter.",
+        R("—", "§3 Overview"),
+        link_sheet=S["b"],
+    )
     return d
 
 
@@ -225,26 +237,46 @@ def sheet_basic(wb):
     d.h1("Parameter list")
     d.param_heads()
     rows = [
-        (1, "EUTRANINTERNFREQ", "FREQ_MEAS_FLAG", "selected", "Frequency must be measured. Silent no-HO if off.", "Yes", "4.1.4"),
-        (2, "EUTRANINTERNFREQ", "HO_TRG_FREQ_FORBID_MEAS_FLAG", "deselected", "Must be off for required HO targets.", "Yes", "4.1.4"),
-        (3, "EUTRANINTERFREQNCELL", "NoHoFlag", "PERMIT_HO", "Neighbour allowed as HO target.", "Yes", "4.1.4"),
-        (4, "CELLUEMEASCONTROLCFG", "MaxNonIntraMeasObjNum", "≥ needed objects", "Over cap: equal-priority objects drop at random.", "Yes", "4.1.4"),
-        (5, "CELLUEMEASCONTROLCFG", "MaxEutranFddMeasFreqNum", "≥ needed FDD freqs", "Same random-drop risk for FDD.", "Yes", "4.1.4"),
-        (6, "HOMEASCOMM", "SMeasure", "—", "Calibrate from MR. Must not hide intended A4.", "Tune", "4.1.5"),
-        (7, "INTRARATHOCOMM", "InterFreqHoA1A2TrigQuan", "RSRP", "Recommended trigger quantity.", "Tune", "4.1.4"),
-        (8, "INTRARATHOCOMM", "InterFreqHoA4TrigQuan", "RSRP", "Recommended. Reporting SAME_AS_TRIG_QUAN.", "Tune", "4.1.4"),
-        (9, "INTERFREQHOGROUP", "InterFreqHoA1A2Hyst", "—", "Hys in A1/A2 formulas. Keep A1/A2 pair consistent.", "Tune", "Table 4-8"),
-        (10, "INTERFREQHOGROUP", "InterFreqHoA1A2TimeToTrig", "—", "TTT for A1/A2. QCI-specific optional.", "Tune", "Table 4-8"),
-        (11, "INTERFREQHOGROUP", "InterFreqHoA4Hyst", "—", "Hys in A4: Mn+Ofn+Ocn−Hys > Thresh.", "Tune", "Table 4-8"),
-        (12, "INTERFREQHOGROUP", "InterFreqHoA4TimeToTrig", "not 5120 ms", "5120 ms disables FreqPri, CQI and service-based IFHO (eRAN21.1 Table 4-9).", "Yes", "Table 4-9"),
-        (13, "INTRAFREQHOGROUP", "IntraFreqHoA3Offset", "—", "Off in intra-frequency A3 formula.", "Tune", "4.1.4"),
-        (14, "INTERFREQHOGROUP", "InterFreqHoA3Offset", "—", "Off in inter-frequency A3 formula.", "Tune", "4.1.4"),
-        (15, "EUTRANINTERFREQNCELL", "CellIndividualOffset", "—", "Ocn. Large CIO can mask RF overshoot.", "Tune", "4.1.4"),
-        (16, "EUTRANINTERNFREQ", "QoffsetFreq", "—", "Ofn / connected frequency offset.", "Tune", "4.1.4"),
-        (17, "CELLHOPARACFG", "EutranFilterCoeffRsrp", "—", "L3 RSRP filter. Over-smooth delays coverage rescue.", "Tune", "4.1.4"),
-        (18, "CELLALGOSWITCH", "MEAS_OBJ_PREEMPT_SW", "as designed", "Higher-priority algorithm can take limited UE gap capability.", "Tune", "Table 4-4"),
-        (19, "ENODEBALGOSWITCH", "AutoGapSwitch", "as designed", "Gap pattern cost on DL TTI / VoLTE.", "Tune", "4.1.4"),
-        (20, "CELLQCIPARA", "QciPriorityForHo", "see default map", "FDD default: QCI5=1, QCI1=2, QCI3=3, QCI2=4, QCI4=5, QCI6=6, QCI7=7, QCI8=8, QCI9=9. Smaller = higher priority.", "Tune", "Table 4-10"),
+        (1, "EUTRANINTERNFREQ", "FREQ_MEAS_FLAG", "selected", "Frequency must be measured. Silent no-HO if off.", "Yes", "4.1.4",
+         "Whether the UE is configured to measure this E-UTRAN frequency in connected mode.", R("LBFD-002018", "§4.1.4")),
+        (2, "EUTRANINTERNFREQ", "HO_TRG_FREQ_FORBID_MEAS_FLAG", "deselected", "Must be off for required HO targets.", "Yes", "4.1.4",
+         "If selected, this frequency is forbidden as a handover target even if measured.", R("LBFD-002018", "§4.1.4")),
+        (3, "EUTRANINTERFREQNCELL", "NoHoFlag", "PERMIT_HO", "Neighbour allowed as HO target.", "Yes", "4.1.4",
+         "Per-neighbour flag allowing or prohibiting handover to that cell.", R("LBFD-002018", "§4.1.4")),
+        (4, "CELLUEMEASCONTROLCFG", "MaxNonIntraMeasObjNum", "≥ needed objects", "Over cap: equal-priority objects drop at random.", "Yes", "4.1.4",
+         "Maximum number of non-intra-frequency measurement objects the eNodeB may deliver to a UE.", R("LBFD-002018", "Table 4-3")),
+        (5, "CELLUEMEASCONTROLCFG", "MaxEutranFddMeasFreqNum", "≥ needed FDD freqs", "Same random-drop risk for FDD.", "Yes", "4.1.4",
+         "Maximum number of neighbouring E-UTRAN FDD frequencies that can be delivered for measurement.", R("LBFD-002018", "Table 4-3")),
+        (6, "HOMEASCOMM", "SMeasure", "—", "Calibrate from MR. Must not hide intended A4.", "Tune", "4.1.5",
+         "Serving-cell RSRP above this value allows the UE to skip intra/inter/IRAT measurement.", R("LBFD-002018", "§4.1.5")),
+        (7, "INTRARATHOCOMM", "InterFreqHoA1A2TrigQuan", "RSRP", "Recommended trigger quantity.", "Tune", "4.1.4",
+         "Quantity (RSRP / RSRQ / BOTH) used to trigger inter-frequency events A1 and A2.", R("LBFD-002018", "§4.1.4")),
+        (8, "INTRARATHOCOMM", "InterFreqHoA4TrigQuan", "RSRP", "Recommended. Reporting SAME_AS_TRIG_QUAN.", "Tune", "4.1.4",
+         "Quantity used to trigger inter-frequency event A4.", R("LBFD-002018", "§4.1.4")),
+        (9, "INTERFREQHOGROUP", "InterFreqHoA1A2Hyst", "—", "Hys in A1/A2 formulas. Keep A1/A2 pair consistent.", "Tune", "Table 4-8",
+         "Hysteresis Hys applied to entering and leaving conditions of events A1 and A2.", R("LBFD-002018", "Table 4-8")),
+        (10, "INTERFREQHOGROUP", "InterFreqHoA1A2TimeToTrig", "—", "TTT for A1/A2. QCI-specific optional.", "Tune", "Table 4-8",
+         "Duration TimeToTrig that A1/A2 entering or leaving condition must hold.", R("LBFD-002018", "Table 4-8")),
+        (11, "INTERFREQHOGROUP", "InterFreqHoA4Hyst", "—", "Hys in A4: Mn+Ofn+Ocn−Hys > Thresh.", "Tune", "Table 4-8",
+         "Hysteresis Hys in the event A4 formula.", R("LBFD-002018", "Table 4-8")),
+        (12, "INTERFREQHOGROUP", "InterFreqHoA4TimeToTrig", "not 5120 ms", "5120 ms disables FreqPri, CQI and service-based IFHO (eRAN21.1 Table 4-9).", "Yes", "Table 4-9",
+         "Duration TimeToTrig for event A4. 5120 ms is treated as disable for FreqPri / CQI / service IFHO.", R("LBFD-002018", "Table 4-9")),
+        (13, "INTRAFREQHOGROUP", "IntraFreqHoA3Offset", "—", "Off in intra-frequency A3 formula.", "Tune", "4.1.4",
+         "Offset Off added on the serving side of intra-frequency event A3.", R("LBFD-002018", "§4.1.4")),
+        (14, "INTERFREQHOGROUP", "InterFreqHoA3Offset", "—", "Off in inter-frequency A3 formula.", "Tune", "4.1.4",
+         "Offset Off added on the serving side of inter-frequency event A3.", R("LBFD-002018", "§4.1.4")),
+        (15, "EUTRANINTERFREQNCELL", "CellIndividualOffset", "—", "Ocn. Large CIO can mask RF overshoot.", "Tune", "4.1.4",
+         "Cell-specific offset Ocn (CIO) for the neighbouring cell in A3/A4/A5.", R("LBFD-002018", "§4.1.4")),
+        (16, "EUTRANINTERNFREQ", "QoffsetFreq", "—", "Ofn / connected frequency offset.", "Tune", "4.1.4",
+         "Frequency-specific offset Ofn for the neighbouring frequency.", R("LBFD-002018", "§4.1.4")),
+        (17, "CELLHOPARACFG", "EutranFilterCoeffRsrp", "—", "L3 RSRP filter. Over-smooth delays coverage rescue.", "Tune", "4.1.4",
+         "Layer-3 filter coefficient applied to RSRP before event evaluation.", R("LBFD-002018", "§4.1.4")),
+        (18, "CELLALGOSWITCH", "MEAS_OBJ_PREEMPT_SW", "as designed", "Higher-priority algorithm can take limited UE gap capability.", "Tune", "Table 4-4",
+         "Allows a higher-priority measurement algorithm to preempt gap resources of a limited-capability UE.", R("LBFD-002018", "Table 4-4")),
+        (19, "ENODEBALGOSWITCH", "AutoGapSwitch", "as designed", "Gap pattern cost on DL TTI / VoLTE.", "Tune", "4.1.4",
+         "Controls automatic delivery of measurement gap patterns for inter-frequency / IRAT measurement.", R("LBFD-002018", "§4.1.4")),
+        (20, "CELLQCIPARA", "QciPriorityForHo", "see default map", "FDD default: QCI5=1, QCI1=2, QCI3=3, QCI2=4, QCI4=5, QCI6=6, QCI7=7, QCI8=8, QCI9=9. Smaller = higher priority.", "Tune", "Table 4-10",
+         "Priority used when several QCIs run together so the eNodeB knows which QCI’s HO parameters to deliver.", R("LBFD-002018", "Table 4-10")),
     ]
     for row in rows:
         d.param_row(*row)
@@ -332,28 +364,50 @@ def sheet_coverage(wb):
     d.h1("Parameter list")
     d.param_heads()
     rows = [
-        (1, "ENODEBALGOSWITCH", "IntraFreqCoverHoSwitch", "ON", "§5.2 activation.", "Yes", "5.2 Intra-freq"),
-        (2, "INTRARATHOCOMM", "IntraFreqHoA3TrigQuan", "RSRP", "Default. A3 trigger quantity.", "Tune", "5.2 Intra-freq"),
-        (3, "INTRAFREQHOGROUP", "IntraFreqHoA3Offset", "—", "Off in intra-frequency A3.", "Tune", "5.2 Intra-freq"),
-        (4, "CELLHOPARACFG", "InterFreqCoverHoSwitch", "ON", "§5.3 activation.", "Yes", "5.3 Inter-freq"),
-        (5, "CELLHOPARACFG", "IfCoverPreBlindHoSwitch", "ON if contained", "Preferential blind. Target must fully cover source.", "Tune", "5.3 Inter-freq"),
-        (6, "CELLHOPARACFG", "EmcInterFreqBlindHoSwitch", "ON if needed", "Emergency inter-frequency redirection.", "Tune", "5.3 Inter-freq"),
-        (7, "EUTRANINTERNFREQ", "InterFreqHoEventType", "EventA3 or A4 or A5", "Selects which A2 family and which target event.", "Yes", "5.3 Inter-freq"),
-        (8, "INTERFREQHOGROUP", "A3InterFreqHoA2ThdRsrp", "—", "A2 when event type is A3. Add operator/QCI offset then clamp.", "Tune", "5.3 Inter-freq"),
-        (9, "INTERFREQHOGROUP", "InterFreqHoA2ThdRSRP", "—", "A2 when event type is A4 or A5. Book examples are not design values.", "Tune", "5.3 Inter-freq"),
-        (10, "INTERFREQHOGROUP", "InterFreqHoA4ThdRSRP", "—", "A4 target. Must be better than coverage A2.", "Tune", "5.3 Inter-freq"),
-        (11, "CELLHOPARACFG", "BlindHoA1A2ThdRsrp", "—", "Blind A2. If meas A2 ≤ this, only blind A2 is delivered.", "Tune", "5.3 Blind"),
-        (12, "CELLALGOSWITCH", "ReduceInvalidA1A2RptSigSwitch", "ON recommended", "Deliver A2 first, A1 after A2.", "Tune", "5.3 Inter-freq"),
-        (13, "ENODEBALGOSWITCH", "UtranPsHoSwitch", "ON", "§5.4 measurement HO to UTRAN.", "Yes", "5.4 UTRAN"),
-        (14, "ENODEBALGOSWITCH", "UtranRedirectSwitch", "ON", "§5.4 blind / redirect to UTRAN.", "Yes", "5.4 UTRAN"),
-        (15, "INTERRATHOCOMM", "InterRatHoA1A2TrigQuan", "RSRP", "IRAT A1/A2 quantity.", "Tune", "5.4 / 5.5"),
-        (16, "INTERRATHOCOMMGROUP", "InterRatHoA2ThdRsrp", "—", "IRAT coverage A2.", "Tune", "5.4 / 5.5"),
-        (17, "ENODEBALGOSWITCH", "GeranRedirectSwitch", "ON", "§5.5 GERAN.", "Yes", "5.5 GERAN"),
-        (18, "CELLALGOSWITCH", "UtranFreqLayerMeasSwitch", "ON", "§5.6 CS/PS steering measurement.", "Yes", "5.6 CS/PS"),
-        (19, "CELLALGOSWITCH", "UtranFreqLayerBlindSwitch", "ON", "§5.6 CS/PS steering blind.", "Yes", "5.6 CS/PS"),
-        (20, "UTRANNFREQ", "CsPriority / PsPriority", "Priority_16 or plan", "Priority_0 excludes that frequency from that service.", "Tune", "5.6 CS/PS"),
-        (21, "ENODEBALGOSWITCH", "SrvccRatSteeringSwitch", "ON if SRVCC", "Voice RAT pick after IRAT A2. RatLayerSwitch is legacy.", "Tune", "5.1.5"),
-        (22, "ENODEBALGOSWITCH", "PsRatSteeringSwitch", "ON if data IRAT", "Data RAT pick after IRAT A2.", "Tune", "5.1.5"),
+        (1, "ENODEBALGOSWITCH", "IntraFreqCoverHoSwitch", "ON", "§5.2 activation.", "Yes", "5.2 Intra-freq",
+         "Enables coverage-based intra-frequency handover (event A3).", R("LBFD-00201801", "§5.2")),
+        (2, "INTRARATHOCOMM", "IntraFreqHoA3TrigQuan", "RSRP", "Default. A3 trigger quantity.", "Tune", "5.2 Intra-freq",
+         "Measurement quantity that triggers intra-frequency event A3.", R("LBFD-00201801", "§5.2.4")),
+        (3, "INTRAFREQHOGROUP", "IntraFreqHoA3Offset", "—", "Off in intra-frequency A3.", "Tune", "5.2 Intra-freq",
+         "Offset Off in the intra-frequency A3 formula (Mn+Ofn+Ocn−Hys > Ms+Ofs+Ocs+Off).", R("LBFD-00201801", "§5.2 / §4.1.4")),
+        (4, "CELLHOPARACFG", "InterFreqCoverHoSwitch", "ON", "§5.3 activation.", "Yes", "5.3 Inter-freq",
+         "Enables coverage-based inter-frequency handover (measurement-based and related blind options).", R("LBFD-00201802", "§5.3")),
+        (5, "CELLHOPARACFG", "IfCoverPreBlindHoSwitch", "ON if contained", "Preferential blind. Target must fully cover source.", "Tune", "5.3 Inter-freq",
+         "When ON, an inter-frequency A2 starts preferential blind HO instead of measurement-based IFHO.", R("LBFD-00201802", "§5.3.1")),
+        (6, "CELLHOPARACFG", "EmcInterFreqBlindHoSwitch", "ON if needed", "Emergency inter-frequency redirection.", "Tune", "5.3 Inter-freq",
+         "Enables emergency blind redirection when serving quality is too poor to complete measurement.", R("LBFD-00201802", "§5.3.1")),
+        (7, "EUTRANINTERNFREQ", "InterFreqHoEventType", "EventA3 or A4 or A5", "Selects which A2 family and which target event.", "Yes", "5.3 Inter-freq",
+         "Chooses the target event (A3 / A4 / A5) and therefore which coverage A2 family is delivered.", R("LBFD-00201802", "§5.1.4 / §5.3")),
+        (8, "INTERFREQHOGROUP", "A3InterFreqHoA2ThdRsrp", "—", "A2 when event type is A3. Add operator/QCI offset then clamp.", "Tune", "5.3 Inter-freq",
+         "Event A2 RSRP threshold used when the inter-frequency target event is A3. Effective thd = this + operator/QCI offset.", R("LBFD-00201802", "Table 5-10")),
+        (9, "INTERFREQHOGROUP", "InterFreqHoA2ThdRSRP", "—", "A2 when event type is A4 or A5. Book examples are not design values.", "Tune", "5.3 Inter-freq",
+         "Event A2 RSRP threshold used when the inter-frequency target event is A4 or A5.", R("LBFD-00201802", "Table 5-10")),
+        (10, "INTERFREQHOGROUP", "InterFreqHoA4ThdRSRP", "—", "A4 target. Must be better than coverage A2.", "Tune", "5.3 Inter-freq",
+         "Absolute neighbour RSRP threshold for coverage inter-frequency event A4.", R("LBFD-00201802", "§5.3")),
+        (11, "CELLHOPARACFG", "BlindHoA1A2ThdRsrp", "—", "Blind A2. If meas A2 ≤ this, only blind A2 is delivered.", "Tune", "5.3 Blind",
+         "Event A2 RSRP threshold that starts coverage blind inter-frequency / IRAT handling.", R("LBFD-00201802", "Table 5-3")),
+        (12, "CELLALGOSWITCH", "ReduceInvalidA1A2RptSigSwitch", "ON recommended", "Deliver A2 first, A1 after A2.", "Tune", "5.3 Inter-freq",
+         "Delivers A2 measurement first at RRC setup and A1 only after A2, to reduce extra A1/A2 signalling.", R("LBFD-00201802", "§5.3.1")),
+        (13, "ENODEBALGOSWITCH", "UtranPsHoSwitch", "ON", "§5.4 measurement HO to UTRAN.", "Yes", "5.4 UTRAN",
+         "Enables measurement-based PS handover from E-UTRAN to UTRAN.", R("LOFD-001019", "§5.4")),
+        (14, "ENODEBALGOSWITCH", "UtranRedirectSwitch", "ON", "§5.4 blind / redirect to UTRAN.", "Yes", "5.4 UTRAN",
+         "Enables redirection (blind path) from E-UTRAN to UTRAN.", R("LOFD-001019", "§5.4")),
+        (15, "INTERRATHOCOMM", "InterRatHoA1A2TrigQuan", "RSRP", "IRAT A1/A2 quantity.", "Tune", "5.4 / 5.5",
+         "Quantity used to trigger inter-RAT events A1 and A2.", R("LOFD-001019", "§5.1.4")),
+        (16, "INTERRATHOCOMMGROUP", "InterRatHoA2ThdRsrp", "—", "IRAT coverage A2.", "Tune", "5.4 / 5.5",
+         "Serving-cell A2 RSRP threshold that starts coverage inter-RAT measurement.", R("LOFD-001019", "Table 5-3")),
+        (17, "ENODEBALGOSWITCH", "GeranRedirectSwitch", "ON", "§5.5 GERAN.", "Yes", "5.5 GERAN",
+         "Enables coverage-based handover / redirection from E-UTRAN to GERAN.", R("LOFD-001020", "§5.5")),
+        (18, "CELLALGOSWITCH", "UtranFreqLayerMeasSwitch", "ON", "§5.6 CS/PS steering measurement.", "Yes", "5.6 CS/PS",
+         "Enables measurement-based CS/PS frequency-layer steering toward UTRAN.", R("LOFD-001078", "§5.6")),
+        (19, "CELLALGOSWITCH", "UtranFreqLayerBlindSwitch", "ON", "§5.6 CS/PS steering blind.", "Yes", "5.6 CS/PS",
+         "Enables blind CS/PS frequency-layer steering toward UTRAN.", R("LOFD-001078", "§5.6")),
+        (20, "UTRANNFREQ", "CsPriority / PsPriority", "Priority_16 or plan", "Priority_0 excludes that frequency from that service.", "Tune", "5.6 CS/PS",
+         "Priority of a neighbouring UTRAN frequency for CS services versus PS services. Priority_0 = not used for that service.", R("LOFD-001078", "§5.6")),
+        (21, "ENODEBALGOSWITCH", "SrvccRatSteeringSwitch", "ON if SRVCC", "Voice RAT pick after IRAT A2. RatLayerSwitch is legacy.", "Tune", "5.1.5",
+         "After IRAT A2, restricts measurement to the highest-priority RAT for QCI-1 / SRVCC.", R("LOFD-001019", "Table 5-4")),
+        (22, "ENODEBALGOSWITCH", "PsRatSteeringSwitch", "ON if data IRAT", "Data RAT pick after IRAT A2.", "Tune", "5.1.5",
+         "After IRAT A2, restricts measurement to the highest-priority RAT for data (non-QCI-1) services.", R("LOFD-001019", "Table 5-4")),
     ]
     for row in rows:
         d.param_row(*row)
@@ -412,18 +466,30 @@ def sheet_service(wb):
     d.h1("Parameter list")
     d.param_heads()
     rows = [
-        (1, "ENODEBALGOSWITCH", "ServiceBasedInterFreqHoSwitch", "ON", "eNodeB master for §6.2.", "Yes", "6.2 Inter-freq"),
-        (2, "CELLALGOSWITCH", "SrvBasedInterFreqHoSw", "ON", "Cell allow for §6.2. Both this and row 1 are required.", "Yes", "6.2 Inter-freq"),
-        (3, "SERVICEIFHOCFGGROUP", "InterFreqHoState", "PERMIT_HO", "QCI is allowed to leave serving frequency.", "Yes", "6.2 Inter-freq"),
-        (4, "CNOPERATORQCIPARA", "ServiceIfHoCfgGroupId", "group id", "Binds QCI to the group.", "Yes", "6.2 Inter-freq"),
-        (5, "SERVICEIFDLEARFCNGRP", "DlEarfcn", "EARFCN", "Target frequency. Index 0 is the only target if FDD multi-freq is OFF.", "Yes", "6.2 Inter-freq"),
-        (6, "INTERFREQHOGROUP", "InterFreqLoadBasedHoA4ThdRSRP", "—", "A4 base. Add QCI/operator offset. Must be better than coverage A2.", "Tune", "6.2 Inter-freq"),
-        (7, "INTERFREQHOGROUP", "InterFreqHoA4TimeToTrig", "not 5120 ms", "5120 ms disables this function.", "Yes", "6.2 Inter-freq"),
-        (8, "CELLALGOSWITCH", "ServiceBasedMultiFreqHoSwitch", "as designed", "ON: CA-incapable UEs pick BW/load; CA UEs skip service HO.", "Tune", "6.2 Inter-freq"),
-        (9, "CELLALGOSWITCH", "ServBasedHoBackSwitch", "as designed", "Allow next service HO back to the source frequency.", "Tune", "6.2 Inter-freq"),
-        (10, "ENODEBALGOSWITCH", "UtranServiceHoSwitch", "ON", "§6.3.", "Yes", "6.3 UTRAN"),
-        (11, "ENODEBALGOSWITCH", "GeranServiceHoSwitch", "ON", "§6.4.", "Yes", "6.4 GERAN"),
-        (12, "SERVICEIRHOCFGGROUP", "InterRatHoState", "MUST_HO or PERMIT_HO", "MUST_HO forces IRAT for that QCI.", "Yes", "6.3 / 6.4"),
+        (1, "ENODEBALGOSWITCH", "ServiceBasedInterFreqHoSwitch", "ON", "eNodeB master for §6.2.", "Yes", "6.2 Inter-freq",
+         "eNodeB-level switch that enables service-based inter-frequency handover.", R("LBFD-00201805", "§6.2")),
+        (2, "CELLALGOSWITCH", "SrvBasedInterFreqHoSw", "ON", "Cell allow for §6.2. Both this and row 1 are required.", "Yes", "6.2 Inter-freq",
+         "Cell-level switch that allows service-based inter-frequency handover in this cell. Both eNodeB and cell bits are required.", R("LBFD-00201805", "§6.2")),
+        (3, "SERVICEIFHOCFGGROUP", "InterFreqHoState", "PERMIT_HO", "QCI is allowed to leave serving frequency.", "Yes", "6.2 Inter-freq",
+         "Whether a QCI bound to this group is permitted to leave the serving frequency by service-based HO.", R("LBFD-00201805", "§6.2")),
+        (4, "CNOPERATORQCIPARA", "ServiceIfHoCfgGroupId", "group id", "Binds QCI to the group.", "Yes", "6.2 Inter-freq",
+         "Links a QCI of an operator to a ServiceIfHoCfgGroup (target-frequency policy).", R("LBFD-00201805", "§6.2")),
+        (5, "SERVICEIFDLEARFCNGRP", "DlEarfcn", "EARFCN", "Target frequency. Index 0 is the only target if FDD multi-freq is OFF.", "Yes", "6.2 Inter-freq",
+         "Downlink EARFCN that may carry the QCI after service-based inter-frequency HO.", R("LBFD-00201805", "§6.2 / LOFD-171207")),
+        (6, "INTERFREQHOGROUP", "InterFreqLoadBasedHoA4ThdRSRP", "—", "A4 base. Add QCI/operator offset. Must be better than coverage A2.", "Tune", "6.2 Inter-freq",
+         "Base A4 RSRP threshold for service-based IFHO. Effective thd = this + QCI/operator offset.", R("LBFD-00201805", "Table 6-2")),
+        (7, "INTERFREQHOGROUP", "InterFreqHoA4TimeToTrig", "not 5120 ms", "5120 ms disables this function.", "Yes", "6.2 Inter-freq",
+         "TimeToTrig for the A4 used by service-based IFHO. 5120 ms disables the function.", R("LBFD-00201805", "Table 4-9 / §6.2")),
+        (8, "CELLALGOSWITCH", "ServiceBasedMultiFreqHoSwitch", "as designed", "ON: CA-incapable UEs pick BW/load; CA UEs skip service HO.", "Tune", "6.2 Inter-freq",
+         "When ON, CA-incapable UEs prefer high-priority, high-bandwidth, light-load targets; CA-capable UEs are not service-HO’d.", R("LOFD-171207", "§6.2")),
+        (9, "CELLALGOSWITCH", "ServBasedHoBackSwitch", "as designed", "Allow next service HO back to the source frequency.", "Tune", "6.2 Inter-freq",
+         "Allows a later service-based HO to select the previous source frequency as target.", R("LBFD-00201805", "§6.2")),
+        (10, "ENODEBALGOSWITCH", "UtranServiceHoSwitch", "ON", "§6.3.", "Yes", "6.3 UTRAN",
+         "Enables service-based inter-RAT handover to UTRAN for bound QCIs.", R("LOFD-001043", "§6.3")),
+        (11, "ENODEBALGOSWITCH", "GeranServiceHoSwitch", "ON", "§6.4.", "Yes", "6.4 GERAN",
+         "Enables service-based inter-RAT handover to GERAN for bound QCIs.", R("LOFD-001046", "§6.4")),
+        (12, "SERVICEIRHOCFGGROUP", "InterRatHoState", "MUST_HO or PERMIT_HO", "MUST_HO forces IRAT for that QCI.", "Yes", "6.3 / 6.4",
+         "Inter-RAT policy for the QCI: MUST_HO forces IRAT; PERMIT_HO allows it.", R("LOFD-001043", "§6.3 / §6.4")),
     ]
     for row in rows:
         d.param_row(*row)
@@ -470,13 +536,20 @@ def sheet_distance(wb):
     d.h1("Parameter list")
     d.param_heads()
     rows = [
-        (1, "CELLALGOSWITCH", "DistBasedHoSwitch", "ON", "Master for Chapter 7.", "Yes", "7.x All"),
-        (2, "DISTBASEDHO", "DistBasedMeasObjType", "EUTRAN", "§7.2 LTE target.", "Yes", "7.2 Inter-freq"),
-        (3, "DISTBASEDHO", "DistBasedMeasObjType", "UTRAN", "§7.3.", "Yes", "7.3 UTRAN"),
-        (4, "DISTBASEDHO", "DistBasedMeasObjType", "GERAN", "§7.4.", "Yes", "7.4 GERAN"),
-        (5, "DISTBASEDHO", "DistBasedHoThd", "default then RF", "Start when TA-distance exceeds this for 10 s.", "Tune", "7.2"),
-        (6, "INTERFREQHOGROUP", "InterFreqHoA4ThdRSRP", "—", "Same A4 as coverage IFHO. Must be better than coverage A2.", "Tune", "7.2"),
-        (7, "INTRARATHOCOMM", "InterFreqHoA4TrigQuan", "RSRP", "Default.", "Tune", "7.2"),
+        (1, "CELLALGOSWITCH", "DistBasedHoSwitch", "ON", "Master for Chapter 7.", "Yes", "7.x All",
+         "Master switch that enables distance-based handover (TA-based overshoot control).", R("LBFD-00201804", "§7.1")),
+        (2, "DISTBASEDHO", "DistBasedMeasObjType", "EUTRAN", "§7.2 LTE target.", "Yes", "7.2 Inter-freq",
+         "Selects E-UTRAN as the measurement / target RAT for distance-based HO.", R("LBFD-00201804", "§7.2")),
+        (3, "DISTBASEDHO", "DistBasedMeasObjType", "UTRAN", "§7.3.", "Yes", "7.3 UTRAN",
+         "Selects UTRAN as a distance-based HO target RAT.", R("LOFD-001072", "§7.3")),
+        (4, "DISTBASEDHO", "DistBasedMeasObjType", "GERAN", "§7.4.", "Yes", "7.4 GERAN",
+         "Selects GERAN as a distance-based HO target RAT.", R("LOFD-001073", "§7.4")),
+        (5, "DISTBASEDHO", "DistBasedHoThd", "default then RF", "Start when TA-distance exceeds this for 10 s.", "Tune", "7.2",
+         "Distance threshold. HO measurement starts when TA-estimated distance exceeds this for 10 seconds.", R("LBFD-00201804", "Table 7-2")),
+        (6, "INTERFREQHOGROUP", "InterFreqHoA4ThdRSRP", "—", "Same A4 as coverage IFHO. Must be better than coverage A2.", "Tune", "7.2",
+         "A4 RSRP threshold used to qualify the LTE target after distance trigger.", R("LBFD-00201804", "Table 7-3")),
+        (7, "INTRARATHOCOMM", "InterFreqHoA4TrigQuan", "RSRP", "Default.", "Tune", "7.2",
+         "Quantity used to trigger the A4 that qualifies a distance-based LTE target.", R("LBFD-00201804", "Table 7-5")),
     ]
     for row in rows:
         d.param_row(*row)
@@ -523,13 +596,20 @@ def sheet_ulq(wb):
     d.h1("Parameter list")
     d.param_heads()
     rows = [
-        (1, "ENODEBALGOSWITCH", "UlQualityInterFreqHoSwitch", "ON", "§8.2.", "Yes", "8.2 Inter-freq"),
-        (2, "ENODEBALGOSWITCH", "UlQualityInterRATHoSwitch", "ON", "§8.3.", "Yes", "8.3 IRAT"),
-        (3, "CELLHOPARACFG / UL HO", "UlBadQualMcsThd", "—", "Start when UL MCS is below this. Confirm exact MO in MAE.", "Tune", "8.2"),
-        (4, "CELLHOPARACFG / UL HO", "UlBadQualIblerThd", "—", "Start when actual IBLER − target IBLER exceeds this.", "Tune", "8.2"),
-        (5, "INTERFREQHOGROUP", "InterFreqHoA4ThdRSRP", "—", "A4 base.", "Tune", "8.2"),
-        (6, "INTERFREQHOGROUP", "UlBadQualHoA4Offset", "—", "Added to A4 RSRP and RSRQ for this function only.", "Tune", "8.2"),
-        (7, "INTRARATHOCOMM", "InterFreqHoA4TrigQuan", "RSRP", "Default.", "Tune", "8.2"),
+        (1, "ENODEBALGOSWITCH", "UlQualityInterFreqHoSwitch", "ON", "§8.2.", "Yes", "8.2 Inter-freq",
+         "Enables UL-quality-based inter-frequency handover (measurement-based and blind).", R("LBFD-002018", "§8.2")),
+        (2, "ENODEBALGOSWITCH", "UlQualityInterRATHoSwitch", "ON", "§8.3.", "Yes", "8.3 IRAT",
+         "Enables UL-quality-based inter-RAT handover to UTRAN or GERAN.", R("LBFD-002018", "§8.3")),
+        (3, "CELLHOPARACFG / UL HO", "UlBadQualMcsThd", "—", "Start when UL MCS is below this. Confirm exact MO in MAE.", "Tune", "8.2",
+         "Uplink MCS index threshold. Measurement starts when UL MCS is below this value (together with IBLER gap).", R("LBFD-002018", "Table 8-2")),
+        (4, "CELLHOPARACFG / UL HO", "UlBadQualIblerThd", "—", "Start when actual IBLER − target IBLER exceeds this.", "Tune", "8.2",
+         "IBLER-gap threshold. Measurement starts when (actual IBLER − target IBLER) exceeds this value.", R("LBFD-002018", "Table 8-2")),
+        (5, "INTERFREQHOGROUP", "InterFreqHoA4ThdRSRP", "—", "A4 base.", "Tune", "8.2",
+         "Base A4 RSRP threshold for UL-quality IFHO before the UL-quality offset is added.", R("LBFD-002018", "Table 8-3")),
+        (6, "INTERFREQHOGROUP", "UlBadQualHoA4Offset", "—", "Added to A4 RSRP and RSRQ for this function only.", "Tune", "8.2",
+         "Offset added to the A4 RSRP/RSRQ threshold for UL-quality-based HO only. Effective A4 = base + this offset.", R("LBFD-002018", "Table 8-3")),
+        (7, "INTRARATHOCOMM", "InterFreqHoA4TrigQuan", "RSRP", "Default.", "Tune", "8.2",
+         "Quantity used to trigger the A4 that qualifies a UL-quality LTE target.", R("LBFD-002018", "Table 8-5")),
     ]
     for row in rows:
         d.param_row(*row)
@@ -568,12 +648,18 @@ def sheet_cqi(wb):
     d.h1("Parameter list")
     d.param_heads()
     rows = [
-        (1, "CELLHOPARACFG / CELLALGOSWITCH", "CQI-based IFHO switch", "ON", "Confirm exact bit name in MAE on eRAN21.1.", "Yes", "9 CQI"),
-        (2, "INTERFREQHOGROUP", "InterFreqHoA4TimeToTrig", "not 5120 ms", "5120 ms disables CQI IFHO (eRAN21.1 Table 4-9).", "Yes", "9 CQI"),
-        (3, "INTERFREQHOGROUP", "InterFreqHoA4ThdRSRP", "—", "Must be better than coverage A2. Not the book MML example.", "Tune", "9 CQI"),
-        (4, "INTERFREQHOGROUP", "InterFreqHoA4Hyst", "—", "Hys in A4 formula.", "Tune", "9 CQI"),
-        (5, "INTRARATHOCOMM", "InterFreqHoA4TrigQuan", "RSRP", "Recommended.", "Tune", "9 CQI"),
-        (6, "EUTRANINTERNFREQ", "FREQ_MEAS_FLAG", "selected", "From Chapter 4. Still required.", "Yes", "→ Ch.4"),
+        (1, "CELLHOPARACFG / CELLALGOSWITCH", "CQI-based IFHO switch", "ON", "Confirm exact bit name in MAE on eRAN21.1.", "Yes", "9 CQI",
+         "Enables CQI-based inter-frequency handover (FDD). Starts when serving CQI is poor while coverage A2 may not have fired.", R("LBFD-002018", "§9")),
+        (2, "INTERFREQHOGROUP", "InterFreqHoA4TimeToTrig", "not 5120 ms", "5120 ms disables CQI IFHO (eRAN21.1 Table 4-9).", "Yes", "9 CQI",
+         "TimeToTrig for A4. 5120 ms disables CQI-based IFHO.", R("LBFD-002018", "Table 4-9 / §9")),
+        (3, "INTERFREQHOGROUP", "InterFreqHoA4ThdRSRP", "—", "Must be better than coverage A2. Not the book MML example.", "Tune", "9 CQI",
+         "Absolute neighbour RSRP threshold of event A4 used to qualify the CQI-based IFHO target.", R("LBFD-002018", "§9")),
+        (4, "INTERFREQHOGROUP", "InterFreqHoA4Hyst", "—", "Hys in A4 formula.", "Tune", "9 CQI",
+         "Hysteresis Hys in the A4 formula for CQI-based IFHO.", R("LBFD-002018", "Table 4-8 / §9")),
+        (5, "INTRARATHOCOMM", "InterFreqHoA4TrigQuan", "RSRP", "Recommended.", "Tune", "9 CQI",
+         "Quantity used to trigger event A4 for CQI-based IFHO.", R("LBFD-002018", "§9")),
+        (6, "EUTRANINTERNFREQ", "FREQ_MEAS_FLAG", "selected", "From Chapter 4. Still required.", "Yes", "→ Ch.4",
+         "Whether this frequency is included in connected-mode measurement. Required for any IFHO including CQI-based.", R("LBFD-002018", "§4.1.4")),
     ]
     for row in rows:
         d.param_row(*row, link_sheet=S["b"] if row[0] == 6 else None)
@@ -613,13 +699,20 @@ def sheet_sreq(wb):
     d.h1("Parameter list")
     d.param_heads()
     rows = [
-        (1, "CELLALGOSWITCH", "ServiceReqInterFreqHoSwitch", "ON", "FDD: cell-level. Do not use the legacy eNodeB bit on FDD.", "Yes", "10"),
-        (2, "SERVICEIFHOCFGGROUP", "InterFreqHoState", "PERMIT_HO", "Allows this QCI to move at request.", "Yes", "10"),
-        (3, "SERVICEIFHOCFGGROUP", "A4RptWaitingTimer", "—", "Max wait for A4 during gap meas.", "Tune", "10"),
-        (4, "INTERFREQHOGROUP", "SrvReqHoA4ThdRsrp", "—", "Own A4. Must be better than coverage A2.", "Tune", "10"),
-        (5, "INTERFREQHOGROUP", "SrvReqHoA4ThdRsrq", "—", "If RSRQ trigger is used.", "Tune", "10"),
-        (6, "INTERFREQHOGROUP", "InterFreqHoA4TimeToTrig", "not 5120 ms", "Shared A4 TTT. 5120 ms disables this class of IFHO.", "Yes", "10"),
-        (7, "CELLALGOSWITCH", "VoipExProtSwitch", "as designed", "VoLTE exception protection path.", "Tune", "10"),
+        (1, "CELLALGOSWITCH", "ServiceReqInterFreqHoSwitch", "ON", "FDD: cell-level. Do not use the legacy eNodeB bit on FDD.", "Yes", "10",
+         "Cell-level switch that enables service-request-based inter-frequency handover at bearer setup / modify.", R("LBFD-002018", "§10")),
+        (2, "SERVICEIFHOCFGGROUP", "InterFreqHoState", "PERMIT_HO", "Allows this QCI to move at request.", "Yes", "10",
+         "Whether the QCI is permitted to leave the serving frequency when the service is requested.", R("LBFD-002018", "§10.1.1")),
+        (3, "SERVICEIFHOCFGGROUP", "A4RptWaitingTimer", "—", "Max wait for A4 during gap meas.", "Tune", "10",
+         "Maximum time the eNodeB waits for an A4 report during gap-assisted service-request measurement.", R("LBFD-002018", "§10.1.2")),
+        (4, "INTERFREQHOGROUP", "SrvReqHoA4ThdRsrp", "—", "Own A4. Must be better than coverage A2.", "Tune", "10",
+         "Dedicated A4 RSRP threshold for service-request-based IFHO (not mixed with coverage A2).", R("LBFD-002018", "§10.1.3")),
+        (5, "INTERFREQHOGROUP", "SrvReqHoA4ThdRsrq", "—", "If RSRQ trigger is used.", "Tune", "10",
+         "Dedicated A4 RSRQ threshold for service-request-based IFHO when RSRQ is used.", R("LBFD-002018", "§10.1.3")),
+        (6, "INTERFREQHOGROUP", "InterFreqHoA4TimeToTrig", "not 5120 ms", "Shared A4 TTT. 5120 ms disables this class of IFHO.", "Yes", "10",
+         "TimeToTrig for A4. 5120 ms disables service-request IFHO together with FreqPri and CQI.", R("LBFD-002018", "Table 4-9 / §10")),
+        (7, "CELLALGOSWITCH", "VoipExProtSwitch", "as designed", "VoLTE exception protection path.", "Tune", "10",
+         "When ON, after a VoLTE exception the eNodeB may set up QCI-1 if PERMIT_HO and then start IF measurement.", R("LBFD-002018", "§10.1.1")),
     ]
     for row in rows:
         d.param_row(*row)
@@ -668,21 +761,36 @@ def sheet_freqpri(wb):
     d.h1("Parameter list")
     d.param_heads()
     rows = [
-        (1, "CELLALGOSWITCH", "FreqPriorIFHOSwitch", "ON", "Master measurement-based FreqPri.", "Yes", "11"),
-        (2, "CELLALGOSWITCH", "MlbBasedFreqPriHoSwitch", "ON if MLB used", "Lets MLB own heavy load.", "Yes", "11"),
-        (3, "CELLALGOSWITCH", "A2BasedFreqPriHoSwitch", "OFF if same-coverage", "Document: deselect in multi-band same-coverage.", "Tune", "11"),
-        (4, "CELLALGOSWITCH", "FreqPriorIFBlindHOSwitch", "ON if blind needed", "Same-coverage blind only.", "Tune", "11"),
-        (5, "CELLALGOSWITCH", "LoadTriggerFreqPriHoSwitch", "as designed", "Extra load/overlap/PCI checks.", "Tune", "11"),
-        (6, "EUTRANINTERNFREQ", "FreqPriBasedHoMeasFlag", "ENABLE", "This EARFCN is a FreqPri meas object.", "Yes", "11"),
-        (7, "EUTRANINTERNFREQ", "MeasPriorityForFreqPriHo", "priority", "Higher = preferred FreqPri target.", "Tune", "11"),
-        (8, "INTERFREQHOGROUP", "FreqPriInterFreqHoA1ThdRsrp", "—", "Serving-good A1. Not the book example dBm.", "Tune", "11"),
-        (9, "INTERFREQHOGROUP", "FreqPriInterFreqHoA2ThdRsrp", "—", "Only if A2-based mode is used.", "Tune", "11"),
-        (10, "INTERFREQHOGROUP", "InterFreqLoadBasedHoA4ThdRsrp", "—", "Target A4. Better than coverage A2.", "Tune", "11"),
-        (11, "INTERFREQHOGROUP", "InterFreqHoA4TimeToTrig", "not 5120 ms", "Disables FreqPri if 5120 ms.", "Yes", "11"),
-        (12, "INTRARATHOCOMM", "FreqPriInterFreqHoA1TrigQuan", "RSRP", "Recommended.", "Tune", "11"),
-        (13, "INTRARATHOCOMM", "FreqPriIFHoWaitingTimer", "—", "Wait for FreqPri A4 report.", "Tune", "11"),
-        (14, "INTRARATHOCOMM", "FreqPriInHoProtectionTimer", "> 0", "After incoming unnecessary HO.", "Tune", "11"),
-        (15, "EUTRANINTERFREQNCELL", "BlindHoPriority", "≥16 if used", "Optional preferred blind neighbour. Example in book uses 17.", "Tune", "11"),
+        (1, "CELLALGOSWITCH", "FreqPriorIFHOSwitch", "ON", "Master measurement-based FreqPri.", "Yes", "11",
+         "Enables frequency-priority-based inter-frequency handover (measurement-based).", R("LBFD-002018", "§11")),
+        (2, "CELLALGOSWITCH", "MlbBasedFreqPriHoSwitch", "ON if MLB used", "Lets MLB own heavy load.", "Yes", "11",
+         "When MLB is triggered, FreqPri yields so load movement is owned by Intra-RAT MLB.", R("LBFD-002018", "§11 / Table 11-7")),
+        (3, "CELLALGOSWITCH", "A2BasedFreqPriHoSwitch", "OFF if same-coverage", "Document: deselect in multi-band same-coverage.", "Tune", "11",
+         "Uses FreqPri A2 (serving poor) as a FreqPri start/stop condition. Deselect in same-coverage multi-band.", R("LBFD-002018", "§11")),
+        (4, "CELLALGOSWITCH", "FreqPriorIFBlindHOSwitch", "ON if blind needed", "Same-coverage blind only.", "Tune", "11",
+         "Enables frequency-priority blind handover in multi-band same-coverage.", R("LBFD-002018", "Table 10-6 / §11")),
+        (5, "CELLALGOSWITCH", "LoadTriggerFreqPriHoSwitch", "as designed", "Extra load/overlap/PCI checks.", "Tune", "11",
+         "Adds load, overlap and PCI checks before a frequency-priority HO is started.", R("LBFD-002018", "§11")),
+        (6, "EUTRANINTERNFREQ", "FreqPriBasedHoMeasFlag", "ENABLE", "This EARFCN is a FreqPri meas object.", "Yes", "11",
+         "Whether this neighbouring frequency is a measurement object for frequency-priority HO.", R("LBFD-002018", "§11")),
+        (7, "EUTRANINTERNFREQ", "MeasPriorityForFreqPriHo", "priority", "Higher = preferred FreqPri target.", "Tune", "11",
+         "Priority of this frequency among frequency-priority measurement objects. Higher value = preferred.", R("LBFD-002018", "§11")),
+        (8, "INTERFREQHOGROUP", "FreqPriInterFreqHoA1ThdRsrp", "—", "Serving-good A1. Not the book example dBm.", "Tune", "11",
+         "Event A1 RSRP threshold that indicates serving is good enough to start or keep FreqPri.", R("LBFD-002018", "§11")),
+        (9, "INTERFREQHOGROUP", "FreqPriInterFreqHoA2ThdRsrp", "—", "Only if A2-based mode is used.", "Tune", "11",
+         "Event A2 RSRP threshold used when A2-based frequency-priority mode is enabled.", R("LBFD-002018", "§11")),
+        (10, "INTERFREQHOGROUP", "InterFreqLoadBasedHoA4ThdRsrp", "—", "Target A4. Better than coverage A2.", "Tune", "11",
+         "A4 RSRP threshold of the high-priority (usually high-band) target. May add FreqPriHoA4ThldRsrpOffset per EARFCN.", R("LBFD-002018", "§11")),
+        (11, "INTERFREQHOGROUP", "InterFreqHoA4TimeToTrig", "not 5120 ms", "Disables FreqPri if 5120 ms.", "Yes", "11",
+         "TimeToTrig for A4. 5120 ms disables frequency-priority IFHO.", R("LBFD-002018", "Table 4-9 / §11")),
+        (12, "INTRARATHOCOMM", "FreqPriInterFreqHoA1TrigQuan", "RSRP", "Recommended.", "Tune", "11",
+         "Quantity used to trigger FreqPri event A1. RSRP is recommended.", R("LBFD-002018", "§11")),
+        (13, "INTRARATHOCOMM", "FreqPriIFHoWaitingTimer", "—", "Wait for FreqPri A4 report.", "Tune", "11",
+         "Time the eNodeB waits for a frequency-priority A4 measurement report.", R("LBFD-002018", "§11")),
+        (14, "INTRARATHOCOMM", "FreqPriInHoProtectionTimer", "> 0", "After incoming unnecessary HO.", "Tune", "11",
+         "Protects a UE after an incoming unnecessary HO so FreqPri does not bounce it back immediately.", R("LBFD-002018", "§11")),
+        (15, "EUTRANINTERFREQNCELL", "BlindHoPriority", "≥16 if used", "Optional preferred blind neighbour. Example in book uses 17.", "Tune", "11",
+         "Priority used to pick a preferred neighbouring cell for frequency-priority blind HO.", R("LBFD-002018", "§11")),
     ]
     for row in rows:
         d.param_row(*row)
@@ -721,10 +829,14 @@ def sheet_speed(wb):
     d.h1("Parameter list")
     d.param_heads()
     rows = [
-        (1, "CELLHOPARACFG", "InterFreqCoverHoSwitch", "ON", "Prerequisite. Open Chapter 5.", "Yes", "→ Ch.5.3"),
-        (2, "CELLALGOSWITCH / HO", "Speed-based IFHO switch", "ON", "Confirm exact bit in MAE on eRAN21.1.", "Yes", "12"),
-        (3, "INTERFREQHOGROUP", "Coverage A2 / A4 as Ch.5.3", "—", "Speed HO re-uses coverage events. No separate A2 family.", "Tune", "12"),
-        (4, "EUTRANINTERNFREQ", "FREQ_MEAS_FLAG", "selected", "Coverage-layer EARFCN must be measurable.", "Yes", "→ Ch.4"),
+        (1, "CELLHOPARACFG", "InterFreqCoverHoSwitch", "ON", "Prerequisite. Open Chapter 5.", "Yes", "→ Ch.5.3",
+         "Coverage-based inter-frequency HO must be on before speed-based IFHO can be enabled.", R("LBFD-00201802", "§5.3 / §12")),
+        (2, "CELLALGOSWITCH / HO", "Speed-based IFHO switch", "ON", "Confirm exact bit in MAE on eRAN21.1.", "Yes", "12",
+         "Enables speed-based inter-frequency handover (FDD). High-speed UEs are steered to the coverage layer.", R("LBFD-002018", "§12")),
+        (3, "INTERFREQHOGROUP", "Coverage A2 / A4 as Ch.5.3", "—", "Speed HO re-uses coverage events. No separate A2 family.", "Tune", "12",
+         "Speed-based HO does not have its own A2 family; it re-uses coverage inter-frequency A2/A3/A4/A5.", R("LBFD-002018", "§12")),
+        (4, "EUTRANINTERNFREQ", "FREQ_MEAS_FLAG", "selected", "Coverage-layer EARFCN must be measurable.", "Yes", "→ Ch.4",
+         "The coverage-layer frequency must be a connected-mode measurement object.", R("LBFD-002018", "§4.1.4 / §12")),
     ]
     for i, row in enumerate(rows):
         link = S["c"] if i == 0 else (S["b"] if i == 3 else None)
@@ -761,14 +873,22 @@ def sheet_utran_mplmn(wb):
     d.h1("Parameter list")
     d.param_heads()
     rows = [
-        (1, "ENODEBALGOSWITCH", "UtranSepOpMobilitySwitch", "ON", "Master.", "Yes", "13"),
-        (2, "UTRANNETWORKCAPCFG", "Mcc / Mnc / RncId", "operator RNC", "Key of the capability row.", "Yes", "13"),
-        (3, "UTRANNETWORKCAPCFG", "PsHoCapCfg", "ON if RNC can PS HO", "Else eNodeB will not choose PS HO to that RNC.", "Yes", "13"),
-        (4, "UTRANNETWORKCAPCFG", "VoipCapCfg", "as RNC", "VoIP HO capability.", "Tune", "13"),
-        (5, "UTRANNETWORKCAPCFG", "SrvccCapCfg", "as RNC", "SRVCC capability.", "Tune", "13"),
-        (6, "UTRANNETWORKCAPCFG", "SiByRimCapCfg", "as RNC", "CN-based RIM only. Not eCoordinator RIM.", "Tune", "13"),
-        (7, "UTRANNETWORKCAPCFG", "UltraFlashCsfbCapCfg", "as RNC", "Ultra-flash CSFB.", "Tune", "13"),
-        (8, "ENODEBALGOSWITCH", "UtranPsHoSwitch / UtranRedirectSwitch", "ON as needed", "Prerequisite from Chapter 5.4.", "Yes", "→ Ch.5.4"),
+        (1, "ENODEBALGOSWITCH", "UtranSepOpMobilitySwitch", "ON", "Master.", "Yes", "13",
+         "Enables separate UTRAN mobility policies per PLMN / RNC at target-decision time.", R("LOFD-070216", "§13")),
+        (2, "UTRANNETWORKCAPCFG", "Mcc / Mnc / RncId", "operator RNC", "Key of the capability row.", "Yes", "13",
+         "Identifies the UTRAN RNC (PLMN + RNC ID) whose capabilities are configured.", R("LOFD-070216", "Table 11-1 / §13")),
+        (3, "UTRANNETWORKCAPCFG", "PsHoCapCfg", "ON if RNC can PS HO", "Else eNodeB will not choose PS HO to that RNC.", "Yes", "13",
+         "Whether that RNC supports PS handover. If off, the eNodeB will not choose PS HO toward it.", R("LOFD-070216", "§13.1")),
+        (4, "UTRANNETWORKCAPCFG", "VoipCapCfg", "as RNC", "VoIP HO capability.", "Tune", "13",
+         "Whether VoIP services can be handed over to that UTRAN RNC.", R("LOFD-070216", "§13.1")),
+        (5, "UTRANNETWORKCAPCFG", "SrvccCapCfg", "as RNC", "SRVCC capability.", "Tune", "13",
+         "Whether SRVCC to that UTRAN RNC is supported.", R("LOFD-070216", "§13.1")),
+        (6, "UTRANNETWORKCAPCFG", "SiByRimCapCfg", "as RNC", "CN-based RIM only. Not eCoordinator RIM.", "Tune", "13",
+         "Whether that RNC supports CN-based RIM for SI acquisition (CSFB / redirect method).", R("LOFD-070216", "§13.1")),
+        (7, "UTRANNETWORKCAPCFG", "UltraFlashCsfbCapCfg", "as RNC", "Ultra-flash CSFB.", "Tune", "13",
+         "Whether that RNC supports ultra-flash CSFB from E-UTRAN.", R("LOFD-070216", "§13.1")),
+        (8, "ENODEBALGOSWITCH", "UtranPsHoSwitch / UtranRedirectSwitch", "ON as needed", "Prerequisite from Chapter 5.4.", "Yes", "→ Ch.5.4",
+         "Coverage IRAT to UTRAN must already be enabled; this chapter only specialises the policy per PLMN.", R("LOFD-001019", "§5.4 / §13")),
     ]
     for i, row in enumerate(rows):
         d.param_row(*row, link_sheet=S["c"] if i == 7 else None)
@@ -797,10 +917,14 @@ def sheet_geran_mplmn(wb):
     d.h1("Parameter list")
     d.param_heads()
     rows = [
-        (1, "ENODEBALGOSWITCH", "GeranSepOpMobilitySwitch", "ON", "Confirm exact bit name in MAE.", "Yes", "14"),
-        (2, "GERANNETWORKCAPCFG", "Mcc / Mnc / BscId", "operator BSC", "Key of the capability row. Confirm MO name in MAE.", "Yes", "14"),
-        (3, "GERANNETWORKCAPCFG", "capability bits", "as BSC", "HO / CCO / RIM as supported by that BSC.", "Tune", "14"),
-        (4, "ENODEBALGOSWITCH", "GeranRedirectSwitch", "ON as needed", "Prerequisite from Chapter 5.5.", "Yes", "→ Ch.5.5"),
+        (1, "ENODEBALGOSWITCH", "GeranSepOpMobilitySwitch", "ON", "Confirm exact bit name in MAE.", "Yes", "14",
+         "Enables separate GERAN mobility policies per PLMN / BSC at target-decision time.", R("LOFD-111204", "§14")),
+        (2, "GERANNETWORKCAPCFG", "Mcc / Mnc / BscId", "operator BSC", "Key of the capability row. Confirm MO name in MAE.", "Yes", "14",
+         "Identifies the GERAN BSC (PLMN + BSC ID) whose capabilities are configured.", R("LOFD-111204", "§14")),
+        (3, "GERANNETWORKCAPCFG", "capability bits", "as BSC", "HO / CCO / RIM as supported by that BSC.", "Tune", "14",
+         "GERAN HO, CCO and SI-by-RIM capabilities of that BSC. Confirm option names in MAE.", R("LOFD-111204", "§14")),
+        (4, "ENODEBALGOSWITCH", "GeranRedirectSwitch", "ON as needed", "Prerequisite from Chapter 5.5.", "Yes", "→ Ch.5.5",
+         "Coverage IRAT to GERAN must already be enabled; this chapter only specialises the policy per PLMN.", R("LOFD-001020", "§5.5 / §14")),
     ]
     for i, row in enumerate(rows):
         d.param_row(*row, link_sheet=S["c"] if i == 3 else None)

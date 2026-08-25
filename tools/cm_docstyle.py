@@ -20,9 +20,10 @@ LIM_BG = "FBF4F2"
 LINK = "0563C1"
 WHITE = "FFFFFF"
 GOLD = "8A6D3B"
+VALUE_BLUE = "0070C0"
 
-COLS = 7
-W = [3.2, 18, 30, 16, 44, 10, 18]
+COLS = 9
+W = [5, 16, 26, 14, 26, 8, 14, 34, 38]
 
 thin = Border(
     left=Side(style="hair", color=HAIR),
@@ -54,8 +55,8 @@ class DocSheet:
         for i, w in enumerate(W, 1):
             ws.column_dimensions[get_column_letter(i)].width = w
         ws.sheet_view.showGridLines = False
-        ws.page_setup.orientation = "portrait"
-        ws.page_setup.paperSize = ws.PAPERSIZE_A4
+        ws.page_setup.orientation = "landscape"
+        ws.page_setup.paperSize = ws.PAPERSIZE_A3
         ws.page_setup.fitToPage = True
         ws.page_setup.fitToWidth = 1
         ws.page_setup.fitToHeight = 0
@@ -205,9 +206,9 @@ class DocSheet:
         return self
 
     def param_heads(self):
-        names = ["SN", "MO", "Parameter", "Value", "Comment", "Core", "Sub-group"]
+        names = ["SN", "MO", "Parameter", "Value", "Comment", "Core", "Sub-group", "Parameter Meaning", "Reference"]
         ws, r = self.ws, self.r
-        ws.row_dimensions[r].height = 20
+        ws.row_dimensions[r].height = 22
         for c, name in enumerate(names, 1):
             cell = ws.cell(r, c, name)
             cell.font = ft(9, True, NAVY)
@@ -217,14 +218,19 @@ class DocSheet:
         self.r += 1
         return self
 
-    def param_row(self, sn, mo, param, value, comment, core, group, link_sheet=None):
+    def param_row(self, sn, mo, param, value, comment, core, group, meaning="", reference="", link_sheet=None):
         ws, r = self.ws, self.r
-        vals = [sn, mo, param, value, comment, core, group]
-        h = min(78, 20 + max(len(str(comment)), 40) // 42 * 12)
+        vals = [sn, mo, param, value, comment, core, group, meaning, reference]
+        h = min(84, 22 + max(len(str(comment)), len(str(meaning)), len(str(reference)), 36) // 36 * 12)
         ws.row_dimensions[r].height = h
         for c, v in enumerate(vals, 1):
             cell = ws.cell(r, c, v)
-            cell.font = ft(10, c in (1, 4, 6), TEXT if c != 4 else NAVY)
+            if c == 4:
+                cell.font = ft(10, True, VALUE_BLUE)
+            elif c in (1, 6):
+                cell.font = ft(10, True, TEXT)
+            else:
+                cell.font = ft(10, False, TEXT)
             cell.alignment = C if c in (1, 4, 6) else T
             cell.fill = fl(WHITE)
             cell.border = Border(bottom=Side(style="hair", color=LINE))
