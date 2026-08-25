@@ -75,7 +75,7 @@ def sheet_toc_fix(wb):
         "One sheet per feature. Hyperlinks jump to the related feature in one click.",
         "Gridlines are off. Read it like a Word chapter: Introduction → Principle → each sub-group → Combined summary → Parameter list.",
         "Parameter list: Value = value only (blue). Comment = how to use it. Parameter Meaning = what it is. Reference = Feature ID + document name.",
-        "Command-example dBm in the book (for example A1/A2 −85/−87 dBm, A4 −103 dBm) are not design values. They are not copied into Value.",
+        "Command-example dBm in the book (for example A1/A2 −85/−87 dBm, A4 −103 dBm) are not design values. They are not copied into Value. Chapter 4 has a worked example with numbers for A1–A5 / B1 / offset clamp — those numbers are for understanding only.",
         "FDD Feature IDs from §2.3. TDD uses the TD* equivalent (TDLBFD / TDLOFD) unless the document says FDD only.",
         "LBFD-131111 Mobility between LTE TDD and LTE FDD is covered inside 5.3, 6.2 and 7.2 (inter-duplex = inter-frequency).",
     ])
@@ -210,7 +210,36 @@ def sheet_basic(wb):
         "B1  Mn + Ofn − Hys > Thresh     IRAT neighbour absolutely good",
         "B2  Ms + Hys < Th1  AND  Mn + Ofn − Hys > Th2     IRAT coverage pair",
         "Ofn / Ofs = frequency offset. Ocn / Ocs = CellIndividualOffset (CIO). Off = A3 offset. Hys = hysteresis of that event.",
-        "QCI/operator/SPID offsets are added to the base threshold, then clamped. Example: A3InterFreqHoA2ThdRsrp + SPID factor, then MAX(−140, MIN(−43, result)).",
+        "QCI/operator/SPID offsets are added to the base threshold, then clamped: MAX(−140, MIN(−43, result)) for RSRP.",
+    ])
+    d.callout("CALC", "Example with values  ·  for understanding only  ·  not a live design  ·  not the book MML −85/−87/−103 dBm", [
+        "One teaching set so the arithmetic is visible. Calibrate real cells from MR. Later chapters re-use the same idea.",
+        "Assume: Ms = −95 dBm (serving RSRP), Mn = −90 dBm (neighbour RSRP), Hys = 2 dB, Ofn = Ofs = 0, Ocn = Ocs = 0, Off = 2 dB, TimeToTrig = 320 ms.",
+        "A1  Thresh = −100 dBm.   Ms − Hys = −95 − 2 = −97.   −97 > −100 → ENTER. Serving is good. Coverage measurement can stop.",
+        "     If Ms = −105 dBm: −105 − 2 = −107.   −107 > −100 → NO. A1 does not enter.",
+        "A2  Thresh = −100 dBm.   Ms + Hys = −95 + 2 = −93.   −93 < −100 → NO. Serving is not poor. Inter-frequency measurement does not start.",
+        "     If Ms = −105 dBm: −105 + 2 = −103.   −103 < −100 → ENTER. Start inter-frequency / IRAT measurement.",
+        "TimeToTrig. The entering condition must stay true for 320 ms. If it is true for 200 ms and then Ms recovers, the timer resets and no report is sent.",
+    ])
+    d.callout("CALC", "Same teaching set  ·  A3 / A4 / A5  ·  still not a design", [
+        "A3  Left = Mn + Ofn + Ocn − Hys = −90 − 2 = −92.   Right = Ms + Ofs + Ocs + Off = −95 + 2 = −93.   −92 > −93 → ENTER. Neighbour is relatively better.",
+        "     If Off = 6 dB: Right = −89.   −92 > −89 → NO. Larger A3 offset makes intra-frequency HO harder.",
+        "     If CIO Ocn = +3 dB: Left = −90 + 3 − 2 = −89.   −89 > −93 → still ENTER, and the neighbour looks 3 dB better.",
+        "A4  Thresh = −105 dBm.   Mn + Ofn + Ocn − Hys = −92.   −92 > −105 → ENTER. Neighbour is absolutely good enough (need not beat serving).",
+        "     If Mn = −110 dBm: −110 − 2 = −112.   −112 > −105 → NO. Target is not good enough.",
+        "A5  Th1 = −110 dBm, Th2 = −105 dBm.   Ms + Hys = −93 < −110? NO. Serving is not poor, so A5 does not enter even though the neighbour is good.",
+        "     If Ms = −115 dBm: −115 + 2 = −113 < −110 YES, and −92 > −105 YES → ENTER. Serving poor AND neighbour good.",
+    ])
+    d.callout("CALC", "Same teaching set  ·  B1 / B2, offset clamp, A4 vs coverage A2", [
+        "B1  IRAT Mn = −92 (configured IRAT quantity), Ofn = 0, Hys = 2, Thresh = −100.   −92 − 2 = −94.   −94 > −100 → ENTER.",
+        "B2  Serving A2-style Th1 = −110, IRAT B1-style Th2 = −100.   Ms = −115: −115 + 2 = −113 < −110 YES, and −94 > −100 YES → ENTER.",
+        "     If Ms = −95: −93 < −110? NO. B2 does not enter even if the IRAT neighbour is good.",
+        "Offset then clamp (A2 RSRP). Base A3InterFreqHoA2ThdRsrp = −100 dBm. SPID factor = +6 dB. Result = −94. MAX(−140, MIN(−43, −94)) = −94 dBm. Used A2 = −94 dBm.",
+        "     If SPID factor = +70 dB: −100 + 70 = −30 → clamp to −43 dBm (cannot go above −43).",
+        "     If SPID factor = −50 dB: −100 − 50 = −150 → clamp to −140 dBm (cannot go below −140).",
+        "A4 vs coverage A2 (ping-pong). ‘A4 better than A2’ means a higher RSRP requirement: A4_thd > A2_thd (for example A4 = −105, A2 = −110).",
+        "     Safe pair: A2 = −110 dBm, A4 = −105 dBm, Mn = −102 dBm. A4: −102 − 2 = −104 > −105 → HO. After HO, serving = −102. A2: −102 + 2 = −100 < −110? NO. Coverage measurement does not start.",
+        "     Unsafe pair: A2 = −100 dBm, A4 = −110 dBm, Mn = −107 dBm. A4: −107 − 2 = −109 > −110 → HO. After HO, serving = −107. A2: −107 + 2 = −105 < −100 YES. Coverage measurement starts at once — ping-pong.",
     ])
     d.para("A1/A2 Hys and TTT: InterFreqHoGroup.InterFreqHoA1A2Hyst / InterFreqHoA1A2TimeToTrig. A3 Off: IntraFreqHoA3Offset or InterFreqHoA3Offset. A4 Hys/TTT: InterFreqHoA4Hyst / InterFreqHoA4TimeToTrig.")
 
@@ -306,13 +335,20 @@ def sheet_coverage(wb):
         "IRAT A2:  InterRatHoA2ThdRsrp / Rsrq. Further split UTRAN vs GERAN if an A2 offset is set per RAT.",
         "Blind A2:  CellHoParaCfg.BlindHoA1A2ThdRsrp / Rsrq",
         "If measurement A2 threshold ≤ blind A2, the eNodeB delivers only blind A2.",
-        "A4/A5 target threshold must be better than this coverage A2, or the UE ping-pongs back.",
+        "A4/A5 target threshold must be better than this coverage A2 (higher RSRP requirement: A4_thd > A2_thd), or the UE ping-pongs back.",
+        "Example (not a design): A3-based A2 base = −110 dBm, operator/QCI offset = +4 dB → −106 dBm. Clamp MAX(−140, MIN(−43, −106)) = −106 dBm. That −106 dBm is the A2 the UE uses.",
+        "Example ping-pong check: coverage A2 = −110 dBm, so A4 must be higher than −110 dBm (for example A4 = −105 dBm). Unsafe: A2 = −100 and A4 = −110 lets a neighbour at −107 dBm HO, then A2 fires on the new cell (−107 + 2 = −105 < −100).",
     ])
 
     d.h2("5.2  Coverage-based intra-frequency handover   ·   LBFD-00201801")
     d.para("Only measurement-based. No blind. eNodeB delivers intra-frequency A3 after RRC setup. No initiation-decision phase: HO runs when any neighbour meets A3.")
     d.callout("CORE", "Core setting", "ENODEBALGOSWITCH HoAlgoSwitch IntraFreqCoverHoSwitch = ON. IntraFreqHoA3TrigQuan = RSRP (default).")
-    d.callout("CALC", "Calculation", "A3 enter: Mn + Ofn + Ocn − Hys > Ms + Ofs + Ocs + IntraFreqHoA3Offset, true for IntraFreqHoA3TimeToTrig.")
+    d.callout("CALC", "Calculation + example (not a design)", [
+        "A3 enter: Mn + Ofn + Ocn − Hys > Ms + Ofs + Ocs + IntraFreqHoA3Offset, true for IntraFreqHoA3TimeToTrig.",
+        "Example: Ms = −95 dBm, Mn = −90 dBm, Hys = 2 dB, all offsets 0 except Off = 2 dB.",
+        "Left = −90 − 2 = −92.  Right = −95 + 2 = −93.  −92 > −93 → ENTER. Neighbour is 3 dB stronger, offset asks for 2 dB, hysteresis 2 dB, so A3 just passes.",
+        "If IntraFreqHoA3Offset = 6 dB: Right = −89.  −92 > −89 → NO. Increase Off to stop early intra-frequency HO.",
+    ])
     d.two_col(
         "Advantage",
         ["Cuts intra-frequency interference and drop on a contiguous layer.", "No extra license."],
@@ -329,10 +365,13 @@ def sheet_coverage(wb):
         "EmcInterFreqBlindHoSwitch = ON for emergency redirection.",
         "EUTRANINTERNFREQ InterFreqHoEventType = EventA3 or EventA4 or EventA5 (this picks the A2 family).",
     ])
-    d.callout("CALC", "Calculation", [
+    d.callout("CALC", "Calculation + example (not a design)", [
         "Start meas: A2  Ms + Hys < A2_thd  for TTT. Stop: A1  Ms − Hys > A1_thd.",
         "Target A3: relative. Target A4: Mn+Ofn+Ocn−Hys > InterFreqHoA4ThdRSRP. Target A5: serving < Th1 AND neighbour > Th2.",
         "Preferential blind: same A2 as measurement IFHO, but HO instead of meas. Emergency blind: worse A2, policy = redirection.",
+        "Example A2 start: A2_thd = −110 dBm, Hys = 2 dB, Ms = −115 dBm.  −115 + 2 = −113 < −110 → start inter-frequency measurement.",
+        "Example A1 stop: A1_thd = −104 dBm (a few dB above A2 −110), Ms = −95 dBm.  −95 − 2 = −97 > −104 → stop measurement, serving recovered. If Ms is still −108: −108 − 2 = −110 > −104? NO — measurement continues.",
+        "Example A4 target: A4 = −105 dBm, Mn = −90 dBm, Hys = 2.  −92 > −105 → HO. Keep A4 (−105) higher than A2 (−110) so a just-good target is not immediately A2-poor.",
     ])
     d.two_col(
         "Advantage",
@@ -345,7 +384,12 @@ def sheet_coverage(wb):
     d.h2("5.4  Coverage-based inter-RAT handover to UTRAN   ·   LOFD-001019")
     d.para("Start: IRAT A2. Stop: A1. Target: B1 or B2. Blind: UtranRedirectSwitch. Measurement HO: UtranPsHoSwitch or redirect.")
     d.callout("CORE", "Core setting", "UtranPsHoSwitch and/or UtranRedirectSwitch = ON. InterRatHoA1A2TrigQuan = RSRP recommended.")
-    d.callout("CALC", "Calculation", "B1: Mn + Ofn − Hys > B1_thd. B2: serving A2-style Th1 AND B1-style Th2.")
+    d.callout("CALC", "Calculation + example (not a design)", [
+        "B1: Mn + Ofn − Hys > B1_thd. Example: IRAT Mn = −92, Ofn = 0, Hys = 2, B1_thd = −100.  −94 > −100 → ENTER.",
+        "B2: serving A2-style Th1 AND B1-style Th2. Example Th1 = −110, Th2 = −100, Ms = −115, Mn = −92, Hys = 2.",
+        "     Serving: −115 + 2 = −113 < −110 YES. Neighbour: −94 > −100 YES → ENTER. If Ms = −95, serving −93 < −110? NO — B2 does not enter.",
+        "IRAT offload TTT must be < 3 s or the 3 s meas stop kills the report.",
+    ])
     d.two_col("Advantage", ["Last rescue toward 3G."], "Limitation", ["IRAT TTT > 3 s blocks offload-oriented IRAT because meas is stopped at 3 s."])
 
     d.h2("5.5  Coverage-based inter-RAT handover to GERAN   ·   LOFD-001020")
@@ -437,11 +481,13 @@ def sheet_service(wb):
 
     d.h2("6.2  Service-based inter-frequency handover")
     d.callout("CORE", "Core setting", "HoAlgoSwitch ServiceBasedInterFreqHoSwitch = ON  AND  CELLALGOSWITCH SrvBasedInterFreqHoSw = ON. CNOPERATORQCIPARA binds QCI to ServiceIfHoCfgGroup. InterFreqHoState = PERMIT_HO.")
-    d.callout("CALC", "Calculation", [
+    d.callout("CALC", "Calculation + example (not a design)", [
         "Target event A4. Threshold = InterFreqLoadBasedHoA4ThdRSRP + QCI/operator offset (same A4 pool as FreqPri in many versions).",
         "Enter: Mn + Ofn + Ocn − Hys > that threshold, for InterFreqHoA4TimeToTrig.",
+        "Example: base A4 = −105 dBm, QCI offset = +3 dB → used A4 = −102 dBm. Mn = −90, Hys = 2.  −92 > −102 → ENTER.",
+        "If coverage A2 is −110 dBm, used A4 −102 dBm is higher than A2, so the UE is not coverage-measured out of the new cell at once.",
         "ServiceBasedMultiFreqHoSwitch ON: for CA-incapable UEs, pick high priority + high BW + light load. CA-capable UEs are then not service-HO’d (use CA smart selection instead).",
-        "Light load: UL-sync UE count < serving MlbUeNumThd + offset, or neighbour load unknown. Neighbour must send X2 load (YES).",
+        "Light-load example: serving MlbUeNumThd = 40, offset = 5. Neighbour UL-sync UEs = 30.  30 < 40+5 → treated as light load.",
         "ServBasedHoBackSwitch allows return to the source frequency on the next service HO.",
     ])
     d.two_col(
@@ -453,7 +499,10 @@ def sheet_service(wb):
 
     d.h2("6.3  Service-based IRAT to UTRAN")
     d.callout("CORE", "Core setting", "HoAlgoSwitch UtranServiceHoSwitch = ON. SERVICEIRHOCFGGROUP InterRatHoState = MUST_HO or PERMIT_HO. Bind QCI on CNOPERATORQCIPARA.")
-    d.callout("CALC", "Calculation", "Target B1. IRAT offload TTT must be < 3 s or the 3 s meas stop kills the report.")
+    d.callout("CALC", "Calculation + example (not a design)", [
+        "Target B1. Example: IRAT Mn = −92, Hys = 2, B1_thd = −100.  −94 > −100 → ENTER.",
+        "IRAT offload TTT must be < 3 s or the 3 s meas stop kills the report.",
+    ])
     d.two_col("Advantage", ["Force a QCI (often voice) to 3G."], "Limitation", ["Coverage IRAT A2 still owns true edge. Do not use this as coverage rescue."])
 
     d.h2("6.4  Service-based IRAT to GERAN")
@@ -510,11 +559,13 @@ def sheet_distance(wb):
     ])
     d.h1("Principle")
     d.para("eNodeB monitors distance to all UEs. Trigger: distance > DistBasedHoThd for 10 s. Stop: distance ≤ stop threshold for 10 s. Then Chapter 4 A4 (LTE) or B1 (IRAT). If several distance functions are ON, IF / UTRAN / GERAN meas can all be delivered; the target decision picks one.")
-    d.callout("CALC", "Calculation", [
+    d.callout("CALC", "Calculation + example (not a design)", [
         "Distance from TA. Precision about 100 to 150 m.",
         "Start: measured distance > DistBasedHoThd for 10 seconds.",
         "Stop: measured distance ≤ stop threshold for 10 seconds.",
         "LTE target A4: InterFreqHoA4ThdRSRP / RSRQ (same A4 as coverage IFHO). Must still be better than coverage A2.",
+        "Example: DistBasedHoThd = 3000 m. TA says 3200 m for 10 s → start. Then A4: Mn = −90 dBm, Hys = 2, A4 = −105 dBm.  −92 > −105 → HO to the planned layer.",
+        "If TA later falls to 2500 m for 10 s → stop distance measurement. Do not wait for coverage A2 on an overshoot lobe.",
     ])
 
     d.h2("7.2  Distance-based inter-frequency")
@@ -572,11 +623,13 @@ def sheet_ulq(wb):
 
     d.h2("8.2  UL-quality inter-frequency")
     d.callout("CORE", "Core setting", "ENODEBALGOSWITCH HoAlgoSwitch UlQualityInterFreqHoSwitch = ON.")
-    d.callout("CALC", "Calculation", [
+    d.callout("CALC", "Calculation + example (not a design)", [
         "Start meas:  UL MCS index < UlBadQualMcsThd   AND   (actual IBLER − target IBLER) > UlBadQualIblerThd",
         "Stop meas:  MCS ≥ MCS thd   OR   IBLER gap ≤ IBLER thd",
         "A4 threshold = InterFreqHoA4ThdRSRP + UlBadQualHoA4Offset   (same for RSRQ + offset)",
-        "Blind: MCS < blind MCS thd  AND  (IBLER gap − 10%) > IBLER thd  AND  no A4 received.",
+        "Example start: MCS thd = 6, IBLER thd = 5%. UE MCS = 4, actual IBLER = 12%, target IBLER = 10%.  4 < 6 AND (12−10)=2% > 5%?  2% > 5% is NO, so measurement does not start yet (IBLER not bad enough).",
+        "If actual IBLER = 18%: gap = 8% > 5% AND MCS 4 < 6 → START. Then A4: base −105 dBm + UlBadQualHoA4Offset −3 dB → used A4 = −108 dBm. Mn −90, Hys 2.  −92 > −108 → HO.",
+        "Blind: MCS < blind MCS thd  AND  (IBLER gap − 10%) > IBLER thd  AND  no A4 received. Example: gap 18%, thd 5%.  (18−10)=8% > 5% AND still no A4 → blind redirect.",
         "If the QCI-1 blind switch is ON, QCI-1 may be blind-redirected; release cause to MME is always User Inactivity.",
     ])
     d.two_col(
@@ -631,9 +684,11 @@ def sheet_cqi(wb):
         "Chapter 4 flags, NRT and object cap already correct.",
         "A4 threshold better than coverage A2.",
     ])
-    d.callout("CALC", "Calculation", [
+    d.callout("CALC", "Calculation + example (not a design)", [
         "Start: serving CQI stays below the CQI threshold for the configured period.",
         "Target A4: Mn + Ofn + Ocn − Hys > A4_thd (+ any CQI-specific A4 offset if the version has one).",
+        "Example: CQI thd = 6, UE CQI = 4 for the CQI timer → start. Serving RSRP may still be −85 dBm (coverage A2 not fired).",
+        "Then A4 = −105 dBm, Mn = −90, Hys = 2.  −92 > −105 → HO. Keep A4 better than coverage A2.",
         "Stop / ping-pong guard: A4_thd must be better than coverage A2 so the UE is not immediately measured out of the new cell.",
     ])
     d.two_col(
@@ -681,10 +736,11 @@ def sheet_sreq(wb):
         "QCI bind: same ServiceIfHoCfgGroup / ServiceIfDlEarfcnGrp idea as Ch.6, with PERMIT_HO.",
         "A4 TTT ≠ 5120 ms.",
     ])
-    d.callout("CALC", "Calculation", [
+    d.callout("CALC", "Calculation + example (not a design)", [
         "A4 thd = SrvReqHoA4ThdRsrp (+ SrvReqHoA4ThdRsrq if used)  — its own A4, not mixed with coverage A2.",
-        "This A4 must still be better than coverage A2 so coverage measurement does not start immediately after arrival.",
-        "Wait for A4: ServiceIfHoCfgGroup.A4RptWaitingTimer.",
+        "Example: SrvReqHoA4ThdRsrp = −102 dBm, coverage A2 = −110 dBm. Used service-request A4 (−102) is higher than A2 (−110).",
+        "Mn = −90, Hys = 2.  −92 > −102 → ENTER. After HO, serving −90: −90 + 2 = −88 < −110? NO, so coverage measurement does not start immediately.",
+        "Wait for A4: ServiceIfHoCfgGroup.A4RptWaitingTimer. Example 3 s. If no A4 in 3 s, stop gap measurement so user-plane is not stalled.",
         "VoipExProtSwitch: if ON and VoLTE exception, set up QCI-1 if PERMIT_HO in initial context, then start IF meas after access.",
     ])
     d.two_col(
@@ -736,12 +792,11 @@ def sheet_freqpri(wb):
         "EUTRANINTERNFREQ FreqPriBasedHoMeasFlag = ENABLE and MeasPriorityForFreqPriHo set.",
         "A4 TTT ≠ 5120 ms.",
     ])
-    d.callout("CALC", "Calculation", [
-        "FreqPri A1: FreqPriInterFreqHoA1ThdRsrp / Rsrq. Trigger quantity FreqPriInterFreqHoA1TrigQuan = RSRP recommended.",
-        "FreqPri A2 (if A2-based mode): FreqPriInterFreqHoA2ThdRsrp / Rsrq.",
-        "Target A4: InterFreqLoadBasedHoA4ThdRsrp (+ FreqPriHoA4ThldRsrpOffset per EARFCN in later versions).",
-        "Waiting: INTRARATHOCOMM FreqPriIFHoWaitingTimer.",
-        "After incoming unnecessary HO: FreqPriInHoProtectionTimer > 0 so the UE is not bounced back at once.",
+    d.callout("CALC", "Calculation + example (not a design)", [
+        "FreqPri A1: FreqPriInterFreqHoA1ThdRsrp. Example −90 dBm, Hys 2, Ms −85.  −85 − 2 = −87 > −90 → serving is good, FreqPri may start (same-coverage).",
+        "Target A4: InterFreqLoadBasedHoA4ThdRsrp + FreqPriHoA4ThldRsrpOffset. Example base −105 dBm, per-EARFCN offset +2 dB → used A4 = −103 dBm.",
+        "Mn = −90, Hys = 2.  −92 > −103 → ENTER to high band. Need not beat serving; serving can still be −85 dBm.",
+        "Waiting: FreqPriIFHoWaitingTimer. Example 1 s. After incoming unnecessary HO: FreqPriInHoProtectionTimer example 5 s so the UE is not bounced back at once.",
     ])
     d.callout("CONDITION", "Conditions that block start (document)", [
         "HO_USE_VOIP_FREQ_ALLOWED deselected for all QCIs on the UE when VoipMeasFreqPriSwitch is ON — voice can stop FreqPri meas.",
@@ -812,9 +867,12 @@ def sheet_speed(wb):
         "Chapter 4 object cap must include the coverage-layer EARFCN.",
         "A4/A5 or A3 family already correct for coverage IFHO.",
     ])
-    d.callout("CALC", "Calculation", [
-        "Mobility state from HO count in a window (normal / medium / high) as in 3GPP + Huawei speed parameters.",
-        "High-speed: prefer lower-frequency / larger-coverage target. Target still must pass coverage A3 or A4/A5.",
+    d.callout("CALC", "Calculation + example (not a design)", [
+        "Mobility state from HO count in a window (normal / medium / high). Confirm the exact parameter names and window in MAE / eRAN21.1 §12.1.2.",
+        "Example: HoNumThd = 4, HighSpeedHoNumThd = 8, SpeedStateJudgePeriod = 60 s, SpeedStateTimer = 120 s, SpeedStateValidTime = 30 s.",
+        "If the eNodeB counts 6 intra-frequency HOs inside the 60 s judge period: 6 ≥ 4 → enter high-speed, start the 120 s timer, and after 30 s apply the high-speed parameter set.",
+        "If the count later stays ≥ 8, keep high-speed. If it falls below 4, return to normal speed.",
+        "High-speed: prefer lower-frequency / larger-coverage target. Target still must pass coverage A3 or A4/A5 (same numbers as Chapter 5).",
         "Do not set coverage A2 so low that a high-speed UE never leaves a dying small cell — speed HO is not a substitute for A2.",
     ])
     d.two_col(

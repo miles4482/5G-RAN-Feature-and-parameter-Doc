@@ -8,7 +8,7 @@ One Word-like Excel file. One sheet per feature chapter of *Mobility Management 
 
 ## How to read
 
-Open **00 Contents**, then **04 Basic Functions** (required for every later feature), then features 5–14 in order.
+Open **00 Contents**, then **04 Basic Functions** (required for every later feature), then features 5–14 in order. Chapter 4 includes a worked example with numbers for A1–A5 / B1 / offset clamp (for understanding only, not a live design).
 
 Gridlines are off. Each feature sheet: Introduction (sub-groups) → Principle → each sub-group (activities, calculation, advantage/limitation, core setting, conditions) → Combined summary → Parameter list.
 

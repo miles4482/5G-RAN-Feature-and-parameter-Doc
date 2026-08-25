@@ -156,8 +156,9 @@ class DocSheet:
         self._merge(1, COLS, "  " + title, size=10, bold=True, color=tc, bg=bg, align=L, h=18)
         self.r += 1
         body = lines if isinstance(lines, str) else "\n".join(lines)
-        n = max(2, body.count("\n") + 1 + len(body) // 110)
-        self._merge(1, COLS, body, size=11, color=TEXT, bg=bg, align=T, h=min(110, 14 + n * 14))
+        wrap_extra = sum(max(0, (len(line) - 155) // 155) for line in body.split("\n"))
+        n = body.count("\n") + 1 + wrap_extra
+        self._merge(1, COLS, body, size=11, color=TEXT, bg=bg, align=T, h=min(420, max(36, 16 + n * 16)))
         self.r += 1
         return self
 
