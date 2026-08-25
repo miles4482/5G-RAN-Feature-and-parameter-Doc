@@ -12,7 +12,7 @@ from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.hyperlink import Hyperlink
 from openpyxl.worksheet.page import PageMargins
 
-OUT = "/workspace/docs/4G_LTE_Mobility_Management/4G_LTE_Mobility_Management_eRAN21.1_v3.0.xlsx"
+OUT = "/workspace/docs/4G_LTE_Mobility_Management/4G_LTE_Mobility_Management_eRAN21.1_v3.1.xlsx"
 COLS = 6
 
 BLUE = "005596"
@@ -39,10 +39,10 @@ LI = Alignment(wrap_text=True, vertical="center", horizontal="left", indent=1)
 H_STEP = ["Step", "What happens", "MO / parameter", "Rule in the feature book", "If this is wrong", "Source"]
 H_NOTE = ["No.", "Huawei caution", "What it means in the network", "Do / do not", "Related step", "Source"]
 H_PAR = ["Order", "MO", "Parameter", "Role in the procedure", "Depends on / couples with", "Source"]
-H_MML = ["Order", "MO", "What to set (intent)", "Must already be true", "Placeholders / check", "Source"]
+H_MML = ["Order", "MO", "MML command (run in this order)", "Must already be true", "Notes", "Source"]
 H_LINK = ["Open this sheet", "Book", "Issue", "This sheet answers", "Read after", "Source"]
 
-W = [10, 32, 28, 42, 36, 22]
+W = [10, 22, 52, 30, 32, 20]
 
 
 def fl(h):
@@ -93,7 +93,7 @@ def setup(ws, footer, tab=BLUE):
     ws.page_setup.fitToWidth = 1
     ws.page_setup.fitToHeight = 0
     ws.page_margins = PageMargins(0.35, 0.35, 0.5, 0.45)
-    ws.oddHeader.left.text = "4G LTE Mobility Management  |  Huawei eRAN21.1  |  v3.0"
+    ws.oddHeader.left.text = "4G LTE Mobility Management  |  Huawei eRAN21.1  |  v3.1"
     ws.oddFooter.left.text = footer
     ws.oddFooter.right.text = "Page &P of &N"
     ws.sheet_properties.tabColor = tab
@@ -179,6 +179,142 @@ def flow(ws, r, boxes, ref=""):
     return r
 
 
+def mml_heads(ws, r):
+    put(ws, r, 1, "SN", size=9, bold=True, color=BLACK, bg=HDR, align=C, h=20)
+    merge(ws, r, 2, 3, "MML", size=9, bold=True, color=BLACK, bg=HDR, align=C, h=20)
+    put(ws, r, 4, "Purpose", size=9, bold=True, color=BLACK, bg=HDR, align=C, h=20)
+    merge(ws, r, 5, 6, "Note", size=9, bold=True, color=BLACK, bg=HDR, align=C, h=20)
+    return r + 1
+
+
+def mml_row(ws, r, sn, mml, purpose, note_txt):
+    h = auto_h([str(sn), mml, purpose, note_txt])
+    put(ws, r, 1, sn, size=10, bold=True, bg=GREY, align=C, h=h)
+    merge(ws, r, 2, 3, mml, size=9, bg=GREY, align=T, h=h)
+    put(ws, r, 4, purpose, size=10, bg=GREY, align=T, h=h)
+    merge(ws, r, 5, 6, note_txt, size=10, bg=GREY, align=T, h=h)
+    return r + 1
+
+
+def combined_mml(ws, r, rows):
+    r = section(ws, r, "Combined MML Command (all Together)")
+    r = note(ws, r, "All commands below are in execution order. Replace <x>, <earfcn>, <g> and <val> on the NE. Confirm enum names in MAE. Example dBm in the Connected book are not design values.")
+    r = mml_heads(ws, r)
+    for i, (mml, purpose, note_txt) in enumerate(rows, 1):
+        r = mml_row(ws, r, i, mml, purpose, note_txt)
+    return r
+
+
+# Feature MML in sequence. Purpose uses // as in the attached snap.
+MML_IDLE = [
+    ("LST CELLRESEL: LocalCellId=<x>;",
+     "//Dump serving idle parameters before change",
+     "Keep LST output with the change record"),
+    ("LST EUTRANINTERNFREQ: LocalCellId=<x>;",
+     "//Dump SIB5 inter-frequency list before change",
+     "Repeat review for every DlEarfcn"),
+    ("LST CELLALGOSWITCH: LocalCellId=<x>;",
+     "//Dump idle/MLB switch bits before change",
+     "Read-only"),
+    ("LST RRCCONNSTATETIMER:;",
+     "//Dump T320 before change",
+     "SPID/PCC T320 stays 180 min"),
+    ("MOD CELLRESEL: LocalCellId=<x>, CellReselPriority=<prio>, SIntraSearchCfgInd=CFG, SNonIntraSearchCfgInd=CFG, SIntraSearch=<val>, SNonIntraSearch=<val>;",
+     "//Set serving common priority and search start",
+     "SIntraSearch > SNonIntraSearch. Huawei example SNonIntraSearch=10. Capacity/hotspot above coverage layer."),
+    ("MOD EUTRANINTERNFREQ: LocalCellId=<x>, DlEarfcn=<earfcn>, CellReselPriorityCfgInd=CFG, CellReselPriority=<prio>, MeasPerformanceDemand=NORMAL;",
+     "//Publish this frequency in SIB5 with priority",
+     "Repeat for every non-serving frequency that must be reselectable. Do not use UNDELIVER on an idle-MLB target."),
+    ("MOD EUTRANINTERNFREQ: LocalCellId=<x>, DlEarfcn=<earfcn>, ThreshXhigh=<val>, ThreshXlow=<val>, QoffsetFreq=<val>, EutranReselTime=<val>;",
+     "//Set higher/lower/equal-priority reselection qualification",
+     "Calibrate from MR. No universal dBm in the feature book."),
+    ("MOD CELLRESEL: LocalCellId=<x>, ThrshServLow=<val>;",
+     "//Permit leave to a lower-priority frequency",
+     "Align with connected coverage A2/A5. Do not set so low that a dying serving cell never yields."),
+    ("MOD EUTRANINTERNFREQ: LocalCellId=<x>, DlEarfcn=<earfcn>, MlbTargetInd=ALLOWED;",
+     "//Allow this frequency as idle and/or connected MLB target",
+     "Use ALLOWED_WITHOUT_IDLE_MLB or ALLOWED_WITHOUT_CONNECT_MLB to block one mode. Coverage NoHoFlag stays PERMIT if coverage HO is required."),
+    ("MOD CELLALGOSWITCH: LocalCellId=<x>, MlbAlgoSwitch=InterFreqIdleMlbSwitch-1;",
+     "//Turn on intra-LTE idle MLB",
+     "Do this after SIB5 NORMAL and MlbTargetInd. Leave InterFreqBlindMlbSwitch-0 unless designed. Confirm bit name in MAE."),
+    ("MOD RRCCONNSTATETIMER: T320ForLoadBalance=<T320>;",
+     "//Set lifetime of load-balance dedicated priorities",
+     "Idle MLB path only. SPID/PCC remains 180 min."),
+    ("LST CELLRESEL: LocalCellId=<x>; LST EUTRANINTERNFREQ: LocalCellId=<x>;",
+     "//Verify idle parameters after MOD",
+     "Wait the next SI modification period before judging camping"),
+]
+
+MML_CONN = [
+    ("LST INTERFREQHOGROUP: LocalCellId=<x>, InterFreqHoGroupId=<g>;",
+     "//Dump A1–A5 group before change",
+     "Do not paste example −85/−87/−103 dBm from the book"),
+    ("LST EUTRANINTERNFREQ: LocalCellId=<x>;",
+     "//Dump meas objects and MLB/FreqPri flags",
+     "Check FREQ_MEAS_FLAG and HO_TRG_FREQ_FORBID_MEAS_FLAG in MAE"),
+    ("LST EUTRANINTERFREQNCELL: LocalCellId=<x>;",
+     "//Dump NRT before change",
+     "Symmetric neighbour, PERMIT_HO, no PCI conflict"),
+    ("LST CELLUEMEASCONTROLCFG: LocalCellId=<x>; LST HOMEASCOMM:;",
+     "//Dump object cap and SMeasure",
+     "SMeasure can silently hide A4"),
+    ("MOD EUTRANINTERNFREQ: LocalCellId=<x>, DlEarfcn=<earfcn>, MlbInterFreqHoEventType=A4;",
+     "//Set MLB/FreqPri event type on this frequency",
+     "Select FREQ_MEAS_FLAG and deselect HO_TRG_FREQ_FORBID_MEAS_FLAG in MAE for required HO targets. A5 only with non-cosited MLB license."),
+    ("MOD CELLUEMEASCONTROLCFG: LocalCellId=<x>, MaxNonIntraMeasObjNum=<n>, MaxEutranFddMeasFreqNum=<n>;",
+     "//Allow enough inter-frequency measurement objects",
+     "n ≥ number of frequencies this cell must measure. Otherwise equal-priority objects drop at random."),
+    ("MOD HOMEASCOMM: SMeasure=<val>;",
+     "//Allow inter-frequency meas when serving is not extremely strong",
+     "Confirm parameter presence on this version. Too high a value suppresses A4."),
+    ("MOD INTERFREQHOGROUP: LocalCellId=<x>, InterFreqHoGroupId=<g>, InterFreqHoA1A2Hyst=<hyst>, InterFreqHoA1A2TimeToTrig=<ttt>;",
+     "//Set coverage A1/A2 stability",
+     "Then set the correct coverage A2 family from MR. Wrong family = wrong HO."),
+    ("MOD INTERFREQHOGROUP: LocalCellId=<x>, InterFreqHoGroupId=<g>, InterFreqLoadBasedHoA4ThdRsrp=<rsrp>, InterFreqHoA4Hyst=<hyst>, InterFreqHoA4TimeToTrig=<ttt>;",
+     "//Set A4 absolute target gate for MLB/FreqPri",
+     "A4 must be better than coverage A2. TTT must not be 5120 ms if FreqPri or MLB A4 is required. Calibrate from MR."),
+    ("MOD INTRARATHOCOMM: LocalCellId=<x>, FreqPriInHoProtectionTimer=<t>, FreqPriIFHoWaitingTimer=<t>;",
+     "//Protect against FreqPri bounce-back after incoming unnecessary HO",
+     "Confirm exact MO/parameter names in MAE. No reverse MLB target on a FreqPri pair."),
+]
+
+MML_MLB = [
+    ("LST CELLALGOSWITCH: LocalCellId=<x>; LST CELLMLB: LocalCellId=<x>; LST CELLMLBUESEL: LocalCellId=<x>;",
+     "//Dump MLB switches, trigger and UE-pick before change",
+     "Confirm Intra-RAT MLB license. Ch.8 p.299 → parameter reference for defaults."),
+    ("MOD EUTRANINTERNFREQ: LocalCellId=<x>, DlEarfcn=<earfcn>, MlbTargetInd=ALLOWED, MlbInterFreqHoEventType=A4;",
+     "//Allow this frequency as MLB target and use event A4",
+     "OverlapInd valid, NoHoFlag=PERMIT_HO. A5 only with Intra-LTE Load Balancing for Non-cosited Cells license."),
+    ("MOD CELLMLB: LocalCellId=<x>, ActiveUeBasedLoadEvalSw=ON, SpectralEffBasedLoadEvalSw=ON, LoadTransferEnhSw=ON;",
+     "//Turn on BW/SE-aware load model",
+     "Huawei: ActiveUe when bandwidths differ; SpectralEff when SE differs a lot (e.g. >30%). Confirm these are CELLMLB fields on this version."),
+    ("MOD CELLMLB: LocalCellId=<x>, MlbTriggerMode=UE_NUMBER_ONLY, InterFreqUeTrsfType=SynchronizedUE, MlbHoCellSelectStrategy=ONLY_STRONGEST_CELL, FreqSelectStrategy=FAIRSTRATEGY;",
+     "//Set connected UE-number equalisation strategy",
+     "ONLY_STRONGEST_CELL is Huawei-recommended. FAIRSTRATEGY / PRIORITYBASED / LOADPRIORITY as designed."),
+    ("MOD CELLMLB: LocalCellId=<x>, InterFreqMlbUeNumThd=<thd>, MlbUeNumOffset=<ofs>, MlbMaxUeNum=<n>, MlbTrigJudgePeriod=<p>, InterFreqLoadEvalPrd=<prd>;",
+     "//Set trigger threshold and transfer volume",
+     "Enter = thd+offset; leave = thd. Do not use eval period 5 s with MlbMaxUeNum≥40."),
+    ("MOD CELLMLBUESEL: LocalCellId=<x>;",
+     "//Apply QCI/ARP/emergency UE-pick policy",
+     "Do not pick edge UEs only for PRB. Confirm fields in MAE."),
+    ("MOD CELLALGOSWITCH: LocalCellId=<x>, MlbAlgoSwitch=InterFreqMlbSwitch-1&InterFreqIdleMlbSwitch-1;",
+     "//Turn on connected and idle intra-RAT MLB last",
+     "Blind bit stays 0 unless containment is proven. Idle also needs T320 and SIB5 NORMAL."),
+    ("MOD RRCCONNSTATETIMER: T320ForLoadBalance=<T320>;",
+     "//Set idle dedicated-priority lifetime",
+     "Idle MLB path. SPID/PCC remains 180 min."),
+    ("LST CELLMLB: LocalCellId=<x>; LST CELLALGOSWITCH: LocalCellId=<x>;",
+     "//Verify MLB activation",
+     "Then check Load HO / UeNumLoad / DedicatedPri counters and SON inter-frequency logs."),
+]
+
+MML_ALL = [
+    ("LST CELLRESEL: LocalCellId=<x>; LST EUTRANINTERNFREQ: LocalCellId=<x>; LST EUTRANINTERFREQNCELL: LocalCellId=<x>; LST INTERFREQHOGROUP: LocalCellId=<x>, InterFreqHoGroupId=<g>; LST CELLUEMEASCONTROLCFG: LocalCellId=<x>; LST HOMEASCOMM:; LST CELLALGOSWITCH: LocalCellId=<x>; LST CELLMLB: LocalCellId=<x>; LST CELLMLBUESEL: LocalCellId=<x>; LST RRCCONNSTATETIMER:;",
+     "//Dump the full mobility baseline before any MOD",
+     "One sequence across Idle + Connected + MLB. Keep LST with the change record."),
+] + MML_IDLE[4:9] + MML_CONN[4:] + MML_MLB[1:]
+
+
 def link_cell(cell, sheet, target="A1"):
     cell.hyperlink = Hyperlink(ref=cell.coordinate, location=f"'{sheet}'!{target}", display=str(cell.value or ""))
     cell.font = ft(10, True, "0563C1", underline="single")
@@ -211,6 +347,8 @@ def build_sheet(wb, name, title_text, blocks, tab=BLUE):
             r += 1
         elif kind == "space":
             r = spacer(ws, r, b[1] if len(b) > 1 else 8)
+        elif kind == "mml":
+            r = combined_mml(ws, r, b[1])
     return ws
 
 
@@ -245,7 +383,9 @@ def overview():
         ("row", ["1", "No AI / daily-KPI / change-request agent", "—", "Feature-book summary only", "—", "—"]),
         ("row", ["2", "No operator-specific band priority table", "—", "Huawei says capacity/hotspot above coverage layer. Exact priority numbers are a design, not a book default.", "Idle + MLB", "MLB §5.1.2.1"]),
         ("row", ["3", "No full default/range list", "—", "MLB Ch.8 points to the version-matched parameter reference.", "Activation sheet", "MLB p.299"]),
-        ("row", ["4", "MML uses LocalCellId=<x> and DlEarfcn=<earfcn>", "—", "Confirm enum names and syntax on the NE in MAE-Access.", "Sheet 5", "MAE"]),
+        ("row", ["4", "MML uses LocalCellId=<x> and DlEarfcn=<earfcn>", "—", "Confirm enum names and syntax on the NE in MAE-Access.", "Last section of every sheet", "MAE"]),
+        ("space", 8),
+        ("mml", MML_ALL),
     ]
 
 
@@ -277,6 +417,8 @@ def chain():
         ("row", ["B", "FreqPri and MLB must not fight", "Connected + MLB", "Same frequency pair", "No reverse MLB target on a FreqPri pair. MlbBasedFreqPriHoSwitch lets MLB own heavy load.", "Connected p.303"]),
         ("row", ["C", "Idle MLB and connected user-number MLB", "Idle + MLB", "Both ON", "Do not combine fixed-proportion idle MLB with user-number connected MLB (ping-pong).", "MLB §5.4.2.2"]),
         ("row", ["D", "Admission", "Connected", "Unnecessary / offload HO", "Target must admit ALL QCIs. Prep fail is often admission, not RF.", "Tables 4-16 / 4-17"]),
+        ("space", 8),
+        ("mml", MML_ALL),
     ]
 
 
@@ -344,6 +486,8 @@ def idle():
         ("row", ["4", "CELLRESEL", "ThrshServLow aligned with coverage A2/A5 philosophy", "Connected coverage design known", "Do not set so low that a dying cell never yields", "Tables 5-3 / 5-4"]),
         ("row", ["5", "EUTRANINTERNFREQ", "MlbTargetInd as designed (idle allow or forbid)", "Coverage NoHoFlag remains PERMIT if coverage HO is required", "WITHOUT_IDLE_MLB blocks only idle MLB, not coverage HO", "pp.28, 129"]),
         ("row", ["6", "CELLALGOSWITCH then T320", "Idle MLB bit after 1–5. Then T320ForLoadBalance.", "License present; Blind bit stays off unless designed", "Wait next SI modification period before judging camp", "§7.1.3"]),
+        ("space", 8),
+        ("mml", MML_IDLE),
     ]
 
 
@@ -408,6 +552,8 @@ def connected():
         ("row", ["4", "INTERFREQHOGROUP", "A4 from MR; better than coverage A2; TTT not 5120 ms if FreqPri/MLB A4 is required", "Step 3 done", "Main absolute target gate", "Table 4-9"]),
         ("row", ["5", "EUTRANINTERNFREQ", "MlbInterFreqHoEventType = A4 (A5 only with non-cosited MLB license)", "MLB will be used", "Co-sited FDD typically A4", "MLB Table 6-3"]),
         ("row", ["6", "FreqPri coordination", "MlbBasedFreqPriHoSwitch / LoadTrigger / non-zero incoming protect timer; no reverse MLB pair", "Confirm exact MO name in MAE", "Stops FreqPri fighting MLB", "p.303"]),
+        ("space", 8),
+        ("mml", MML_CONN),
     ]
 
 
@@ -473,6 +619,8 @@ def mlb():
         ("row", ["5", "CA / UE pick", "CaUserLoadTransferSw only if CA UEs must move. Then CELLMLBUESEL policy.", "CA plan", "If OFF, CA UEs stay filtered", "p.157"]),
         ("row", ["6", "Master bits last", "InterFreqMlbSwitch-1 and IdleMlbSwitch-1 if idle transfer is required. Blind stays 0.", "Steps 1–4 done. Idle also needs T320 and SIB5 NORMAL.", "Activate after targets exist", "Table 6-2"]),
         ("row", ["7", "Verify", "Load HO counters (Load vs UeNumLoad), HighLoad Dur/Num, meas success, DL active users, throughput, idle DedicatedPri. SON: Inter-Frequency Handover Statistics ; Idle Mode Release Statistics.", "15-min counters if smart thd is used", "When both PRB and UE-number MLB are on: PRB HO ≈ Load − UeNumLoad", "Tables 6-6, 6-21 ; §§6.1.4.2, 6.5.4.2"]),
+        ("space", 8),
+        ("mml", MML_MLB),
     ]
 
 
@@ -507,6 +655,8 @@ def activate():
         ("row", ["5", "Blind / CA-transfer / SON smart-thd options", "Sold separately in some packages", "Leave off if the license is not present", "Sheet 4", "MLB"]),
         ("space", 8),
         ("major", "SymbolShutdownSwitch in the old CSV sample is Symbol Power Saving. It is not a mobility command and is not used here."),
+        ("space", 8),
+        ("mml", MML_ALL),
     ]
 
 
@@ -514,16 +664,16 @@ def main():
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     wb = Workbook()
     wb.active.title = "tmp"
-    build_sheet(wb, "Read me", "4G LTE Mobility Management — eRAN21.1 v3.0  |  How to read this file", overview(), BLUE)
+    build_sheet(wb, "Read me", "4G LTE Mobility Management — eRAN21.1 v3.1  |  How to read this file", overview(), BLUE)
     build_sheet(wb, "1. End-to-end chain", "1. End-to-end chain  |  Idle → Connected → MLB → Idle", chain(), "1F4E79")
     build_sheet(wb, "2. Idle Mode", "2. Idle Mode Management  |  eRAN21.1 Issue 04  |  Step by step", idle(), "008000")
     build_sheet(wb, "3. Connected Mode", "3. Mobility Management in Connected Mode  |  eRAN21.1 Issue 08  |  Step by step", connected(), "2E75B6")
     build_sheet(wb, "4. Intra-RAT MLB", "4. Intra-RAT Mobility Load Balancing  |  eRAN21.1 Issue 10  |  Step by step", mlb(), "C65911")
     build_sheet(wb, "5. Activation order", "5. Activation order  |  One sequence across the three books", activate(), BLUE)
     del wb["tmp"]
-    wb.properties.title = "4G LTE Mobility Management eRAN21.1 v3.0"
-    wb.properties.subject = "Step-by-step summary of Idle / Connected / Intra-RAT MLB — not the SN sample"
-    wb.properties.version = "3.0"
+    wb.properties.title = "4G LTE Mobility Management eRAN21.1 v3.1"
+    wb.properties.subject = "Step-by-step summary with Combined MML Command on every sheet"
+    wb.properties.version = "3.1"
     wb.save(OUT)
     print("Wrote", OUT)
 
