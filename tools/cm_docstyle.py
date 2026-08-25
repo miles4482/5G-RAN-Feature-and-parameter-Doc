@@ -145,7 +145,13 @@ class DocSheet:
 
     def bullets(self, items):
         for it in items:
-            self._merge(1, COLS, "    •  " + it, size=11, color=TEXT, align=T, h=min(72, 20 + (len(it) // 90) * 14))
+            self._merge(1, COLS, "    •  " + it, size=11, color=TEXT, align=T, h=min(120, 22 + (len(it) // 75) * 14))
+            self.r += 1
+        return self
+
+    def numbered(self, items):
+        for i, it in enumerate(items, 1):
+            self._merge(1, COLS, f"    {i}.  " + it, size=11, color=TEXT, align=T, h=min(120, 22 + (len(it) // 75) * 14))
             self.r += 1
         return self
 
