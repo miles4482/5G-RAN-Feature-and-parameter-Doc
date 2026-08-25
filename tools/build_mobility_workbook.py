@@ -6,13 +6,18 @@ feature in procedure order: Idle → Connected → Intra-RAT MLB → activation.
 """
 
 import os
+import sys
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.hyperlink import Hyperlink
 from openpyxl.worksheet.page import PageMargins
+from openpyxl.drawing.image import Image as XLImage
 
-OUT = "/workspace/docs/4G_LTE_Mobility_Management/4G_LTE_Mobility_Management_eRAN21.1_v3.2.xlsx"
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from mobility_figures import build_all as build_figures
+
+OUT = "/workspace/docs/4G_LTE_Mobility_Management/4G_LTE_Mobility_Management_eRAN21.1_v3.3.xlsx"
 COLS = 8
 
 BLUE = "005596"
@@ -93,7 +98,7 @@ def setup(ws, footer, tab=BLUE):
     ws.page_setup.fitToWidth = 1
     ws.page_setup.fitToHeight = 0
     ws.page_margins = PageMargins(0.35, 0.35, 0.5, 0.45)
-    ws.oddHeader.left.text = "4G LTE Mobility Management  |  Huawei eRAN21.1  |  v3.2"
+    ws.oddHeader.left.text = "4G LTE Mobility Management  |  Huawei eRAN21.1  |  v3.3"
     ws.oddFooter.left.text = footer
     ws.oddFooter.right.text = "Page &P of &N"
     ws.sheet_properties.tabColor = tab
@@ -316,13 +321,28 @@ MML_ALL = [
 ] + MML_IDLE[4:9] + MML_CONN[4:] + MML_MLB[1:]
 
 
+def add_fig(ws, r, key, caption, figs):
+    r = note(ws, r, caption)
+    path = figs[key]
+    img = XLImage(path)
+    scale = min(1.0, 1080 / float(img.width or 1080))
+    img.width = int(img.width * scale)
+    img.height = int(img.height * scale)
+    img.anchor = f"A{r}"
+    ws.add_image(img)
+    skip = max(11, int(img.height / 18) + 2)
+    for _ in range(skip):
+        r = spacer(ws, r, 16)
+    return r
+
+
 def link_cell(cell, sheet, target="A1"):
     cell.hyperlink = Hyperlink(ref=cell.coordinate, location=f"'{sheet}'!{target}", display=str(cell.value or ""))
     cell.font = ft(10, True, "0563C1", underline="single")
     cell.alignment = T
 
 
-def build_sheet(wb, name, title_text, blocks, tab=BLUE):
+def build_sheet(wb, name, title_text, blocks, tab=BLUE, figs=None):
     ws = wb.create_sheet(name)
     widths(ws, W)
     setup(ws, title_text, tab=tab)
@@ -339,6 +359,8 @@ def build_sheet(wb, name, title_text, blocks, tab=BLUE):
             r = note(ws, r, b[1])
         elif kind == "flow":
             r = flow(ws, r, b[1], b[2] if len(b) > 2 else "")
+        elif kind == "fig":
+            r = add_fig(ws, r, b[1], b[2], figs or {})
         elif kind == "heads":
             r = heads(ws, r, b[1])
         elif kind == "row":
@@ -367,12 +389,25 @@ def overview():
                  "When a cell is overloaded. Which UEs. Idle dedicated-priority transfer or connected load HO.", "RF plan. Coverage A2 family design.", "Sheet 4"]),
         ("space", 8),
         ("section", "How the three books fit (one chain)"),
+        ("fig", "chain", "Document chain  |  Idle Fig 5-1  →  Connected Fig 4-1  →  MLB Fig 3-1"),
         ("flow", ["Idle: camp / reselect", "RRC connect", "Coverage A2/A5 protect", "FreqPri A1/A4 steer", "MLB load HO / idle release", "Back to idle (T320)"],
          "Idle Fig 5-1  →  Connected Fig 4-1  →  MLB Fig 3-1"),
         ("major", "Idle decides the next access layer. Connected executes measurement and handover. MLB only decides who and when to move for load. Frequency-priority HO is not the MLB algorithm."),
         ("major", "Necessary coverage HO preempts load / optimisation HO. Do not use connected frequency-priority as a substitute for Intra-RAT MLB."),
+        ("section", "Document charts in this file"),
+        ("note", "Huawei PDF page images are not in this workspace, so each chart is rebuilt from the documented procedure and labelled with the book figure number. Open the feature sheet to see the chart next to the steps."),
+        ("heads", ["Fig", "Document", "What the chart shows", "Sheet", "Use it for", "Book"]),
+        ("row", ["Fig 5-1", "Idle Mode Management", "Selection / reselection sequence", "2. Idle Mode", "Camping and next RRC cell", "Issue 04"]),
+        ("row", ["Fig 4-1", "Idle Mode Management", "Idle functions (select, reselect, SI, dedicated prio)", "2. Idle Mode", "Idle function map", "Issue 04"]),
+        ("row", ["Tables 5-1 to 5-4", "Idle Mode Management", "Higher / equal / lower reselection decision", "2. Idle Mode", "ThreshXhigh / ThrshServLow / ranking", "Issue 04"]),
+        ("row", ["Fig 4-1", "Connected Mode", "HO procedure A1–A5", "3. Connected Mode", "Measurement and HO engine", "Issue 08"]),
+        ("row", ["A1–A5", "Connected Mode", "Event meaning", "3. Connected Mode", "Coverage vs MLB/FreqPri gate", "Issue 08"]),
+        ("row", ["Fig 11-1 / 11-2", "Connected Mode", "Frequency-priority HO (not MLB)", "3. Connected Mode", "High-band steering", "Issue 08"]),
+        ("row", ["Fig 3-1", "Intra-RAT MLB", "Load balancing procedure", "4. Intra-RAT MLB", "Who/when to move", "Issue 10"]),
+        ("row", ["Fig 4-1", "Intra-RAT MLB", "Equalisation vs offload", "4. Intra-RAT MLB", "Need peer load or not", "Issue 10"]),
+        ("row", ["Figs 4-4 / 4-5", "Intra-RAT MLB", "Idle transfer vs connected transfer", "4. Intra-RAT MLB", "T320 vs A4/A5 HO", "Issue 10"]),
         ("space", 8),
-        ("section", "Open the sheets in this order"),
+        ("section", "Open the sheets in this order. Each sheet has the same layout: overview, document chart, procedure table, Combined MML at the bottom."),
         ("heads", H_LINK),
         ("row", ["1. End-to-end chain", "All three", "—", "The full sequence from power-on to the next idle camp", "Start here", "This file"], "1. End-to-end chain"),
         ("row", ["2. Idle Mode", "Idle Mode Management", "Issue 04", "Selection, SIB, reselection, dedicated priority", "After the chain", "Idle book"], "2. Idle Mode"),
@@ -394,6 +429,7 @@ def chain():
     return [
         ("section", "Read this as one procedure"),
         ("note", "Each row is the next thing that happens to a UE. The Book column tells you which feature document owns that step. Open sheets 2–4 for the detail of that step."),
+        ("fig", "chain", "End-to-end chain  |  Idle Fig 5-1  →  Connected Fig 4-1  →  MLB Fig 3-1"),
         ("flow", ["Power-on / idle", "Camped cell → RRC", "Protect coverage", "Steer to high band", "Balance load", "Release → next idle"],
          "Synchronised chain of the three books"),
         ("space", 6),
@@ -425,6 +461,10 @@ def chain():
 
 def idle():
     return [
+        ("section", "Document charts"),
+        ("fig", "idle_41", "Idle Mode Management  Fig 4-1  — idle functions"),
+        ("fig", "idle_51", "Idle Mode Management  Fig 5-1  — selection / reselection sequence"),
+        ("fig", "idle_reselect", "Idle Mode Management  Tables 5-1 to 5-4  — reselection decision"),
         ("section", "Procedure chart"),
         ("flow", ["PLMN select", "Criterion S", "Camp + read SI", "Measure", "Reselect", "RRC on camped cell"],
          "Idle Mode Management Fig 4-1 and Fig 5-1"),
@@ -575,6 +615,10 @@ def idle():
 
 def connected():
     return [
+        ("section", "Document charts"),
+        ("fig", "conn_41", "Mobility Management in Connected Mode  Fig 4-1  — HO procedure"),
+        ("fig", "conn_events", "Connected Mode  A1–A5 events  |  RSRP recommended  |  Tables 4-8, 5-16, 5-22, 5-18"),
+        ("fig", "conn_freqpri", "Connected Mode  Fig 11-1 / 11-2  — frequency-priority HO (not MLB)"),
         ("section", "Procedure chart"),
         ("flow", ["Start HO function", "Meas or blind", "Deliver meas config", "UE reports A1–A5", "Pick target + admit", "Execute HO"],
          "Connected Mode Fig 4-1 §§4.1.1–4.1.8. Full MLB algorithm is in the MLB book, not here."),
@@ -701,6 +745,10 @@ def connected():
 
 def mlb():
     return [
+        ("section", "Document charts"),
+        ("fig", "mlb_31", "Intra-RAT MLB  Fig 3-1  — load balancing procedure"),
+        ("fig", "mlb_41", "Intra-RAT MLB  Fig 4-1  — equalisation vs offload"),
+        ("fig", "mlb_idle_conn", "Intra-RAT MLB  Figs 4-4 / 4-5  — idle transfer vs connected transfer"),
         ("section", "Procedure chart"),
         ("flow", ["Eval load N/C", "Trigger thd + offset", "Admit target", "Select UEs", "A4/A5 HO or idle release", "Penalty / stop"],
          "MLB Fig 3-1. Equalisation vs offload: Fig 4-1. Idle vs connected transfer: Figs 4-4 / 4-5. Load = N/C. Difference = (Load_s − Load_t) / Load_s."),
@@ -841,6 +889,7 @@ def activate():
     return [
         ("section", "One sequence across all three books"),
         ("note", "Do Idle camping first (next access layer), then Connected coverage and A4 (HO engine), then MLB load brain last. LST before every MOD. Placeholders: LocalCellId=<x>, DlEarfcn=<earfcn>. Confirm enums in MAE. Example dBm in the Connected book are not design values."),
+        ("fig", "chain", "Activation follows the same chain: Idle Fig 5-1 → Connected Fig 4-1 → MLB Fig 3-1"),
         ("flow", ["LST baseline", "Idle SIB / priority / search", "Connected flags + coverage", "A4 gate from MR", "MLB target + load model", "MLB thd + master bit + T320"],
          "Activation order — not the sample-file MML"),
         ("space", 6),
@@ -875,18 +924,19 @@ def activate():
 
 def main():
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
+    figs = build_figures()
     wb = Workbook()
     wb.active.title = "tmp"
-    build_sheet(wb, "Read me", "4G LTE Mobility Management — eRAN21.1 v3.2  |  How to read this file", overview(), BLUE)
-    build_sheet(wb, "1. End-to-end chain", "1. End-to-end chain  |  Idle → Connected → MLB → Idle", chain(), "1F4E79")
-    build_sheet(wb, "2. Idle Mode", "2. Idle Mode Management  |  eRAN21.1 Issue 04  |  Step by step", idle(), "008000")
-    build_sheet(wb, "3. Connected Mode", "3. Mobility Management in Connected Mode  |  eRAN21.1 Issue 08  |  Step by step", connected(), "2E75B6")
-    build_sheet(wb, "4. Intra-RAT MLB", "4. Intra-RAT Mobility Load Balancing  |  eRAN21.1 Issue 10  |  Step by step", mlb(), "C65911")
-    build_sheet(wb, "5. Activation order", "5. Activation order  |  One sequence across the three books", activate(), BLUE)
+    build_sheet(wb, "Read me", "4G LTE Mobility Management — eRAN21.1 v3.3  |  How to read this file", overview(), BLUE, figs)
+    build_sheet(wb, "1. End-to-end chain", "1. End-to-end chain  |  Idle → Connected → MLB → Idle", chain(), "1F4E79", figs)
+    build_sheet(wb, "2. Idle Mode", "2. Idle Mode Management  |  eRAN21.1 Issue 04  |  Step by step", idle(), "008000", figs)
+    build_sheet(wb, "3. Connected Mode", "3. Mobility Management in Connected Mode  |  eRAN21.1 Issue 08  |  Step by step", connected(), "2E75B6", figs)
+    build_sheet(wb, "4. Intra-RAT MLB", "4. Intra-RAT Mobility Load Balancing  |  eRAN21.1 Issue 10  |  Step by step", mlb(), "C65911", figs)
+    build_sheet(wb, "5. Activation order", "5. Activation order  |  One sequence across the three books", activate(), BLUE, figs)
     del wb["tmp"]
-    wb.properties.title = "4G LTE Mobility Management eRAN21.1 v3.2"
-    wb.properties.subject = "Step-by-step summary; one parameter per row; Combined MML on every sheet"
-    wb.properties.version = "3.2"
+    wb.properties.title = "4G LTE Mobility Management eRAN21.1 v3.3"
+    wb.properties.subject = "Step-by-step summary with document charts and Combined MML"
+    wb.properties.version = "3.3"
     wb.save(OUT)
     print("Wrote", OUT)
 
