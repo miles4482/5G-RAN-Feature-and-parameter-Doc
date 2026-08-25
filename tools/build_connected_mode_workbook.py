@@ -8,10 +8,10 @@ from openpyxl import Workbook
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from cm_docstyle import DocSheet, NAVY
 
-OUT = "/workspace/docs/4G_LTE_Mobility_Management/Connected_Mode_eRAN21.1_Feature_Sheets_v2.0.xlsx"
+VER = "v2.1"
+OUT = "/workspace/docs/4G_LTE_Mobility_Management/Connected_Mode_eRAN21.1_Feature_Sheets_v2.1.xlsx"
 DOC = "Mobility Management in Connected Mode Feature Parameter Description"
 ISSUE = "Huawei eRAN21.1 Issue 08 (2026-06-30)"
-VER = "v2.0"
 
 
 def R(feat, sec):
@@ -67,7 +67,7 @@ def sheet_toc_fix(wb):
     d = DocSheet(ws, f"{DOC}  |  Contents")
     d.banner(f"{DOC}   ·   {ISSUE}   ·   {VER}")
     d.title("Contents", "How to read this file")
-    d.meta("Version v2.0. One sheet = one feature chapter. Chapter 4 is basic for every later feature. Chapter 5 Overview (§5.1) is shared by 5.2–5.6.")
+    d.meta("Version v2.1. One sheet = one feature chapter. Chapter 4 is basic for every later feature. Chapter 5 Common for sub-group (§5.1) is shared by 5.2–5.6.")
     d.nav([("This page", None), (S["ov"] + " →", S["ov"]), ("Ch.4 Basic (must)", S["b"])])
     d.h1("What this file is")
     d.para(f"{DOC}. {ISSUE}.")
@@ -75,8 +75,8 @@ def sheet_toc_fix(wb):
     d.bullets([
         "One sheet per feature. Hyperlinks jump to the related feature in one click.",
         "Gridlines are off. Read it like a Word chapter: Introduction → Overview (types + major points) → Principle (numbered) → each sub-group → Combined summary → Parameter list.",
-        "Chapter 5 Overview (document §5.1) is shared by every coverage sub-group (5.2–5.6). Read it before 5.3.",
-        "This file is version v2.0.",
+        "Chapter 5 Common for sub-group (document §5.1) is shared by every coverage sub-group (5.2–5.6). Read it before 5.3. Those blocks are boxed.",
+        "This file is version v2.1.",
         "Parameter list: Value = value only (blue). Comment = how to use it. Parameter Meaning = what it is. Reference = Feature ID + document name.",
         "Command-example dBm in the book (for example A1/A2 −85/−87 dBm, A4 −103 dBm) are not design values. They are not copied into Value. Chapter 4 has a worked example with numbers for A1–A5 / B1 / offset clamp — those numbers are for understanding only.",
         "FDD Feature IDs from §2.3. TDD uses the TD* equivalent (TDLBFD / TDLOFD) unless the document says FDD only.",
@@ -318,23 +318,21 @@ def sheet_basic(wb):
 def sheet_coverage(wb):
     d = start(
         wb, "c", "5", "Coverage-based Handover",
-        "Document page 97. Overview §5.1 is shared by every sub-group. Then 5.2–5.6. Necessary handover. Always configure Chapter 4 first.",
+        "Document page 97. §5.1 Common for sub-group is shared by 5.2–5.6. Then each sub-group. Necessary handover. Always configure Chapter 4 first.",
     )
     d.h1("Introduction — sub-groups first")
-    d.para("A coverage-based handover is triggered when a UE moves to the cell edge. The book classifies handovers by target. Every type below shares the same Overview (§5.1).")
-    d.numbered([
+    d.info_box("Types by target  ·  every type shares §5.1 Common for sub-group", [
         "Intra-frequency handover — measurement-based only   ·   LBFD-00201801   ·   §5.2",
         "Inter-frequency handover — measurement-based + preferential blind + emergency blind   ·   LBFD-00201802   ·   §5.3   ·   also LBFD-131111 FDD↔TDD",
         "E-UTRAN to UTRAN handover — measurement-based + blind   ·   LOFD-001019   ·   §5.4",
         "E-UTRAN to GERAN handover — measurement-based + blind   ·   LOFD-001020   ·   §5.5",
         "E-UTRAN to UTRAN CS/PS steering — which UTRAN layer after IRAT A2   ·   LOFD-001078   ·   §5.6",
-    ])
+    ], "A coverage-based handover is triggered when a UE moves to the cell edge. The book classifies handovers by target.")
 
-    d.h1("5.1  Overview  ·  shared by all coverage sub-groups")
-    d.para("Read this Overview before 5.2–5.6. It is the document §5.1 (page 97). It lists every type first, then the major points of each overview item.")
+    d.h1("5.1  Common for sub-group")
+    d.para("Read this before 5.2–5.6. It is the document §5.1 (page 97). Shared by every coverage sub-group. Each item is in its own box.")
 
-    d.h2("5.1.1  Introduction to handover functions")
-    d.numbered([
+    d.info_box("5.1.1  Introduction to handover functions", [
         "Coverage HO starts at the cell edge. The serving cell can no longer carry the UE. It is a necessary handover and preempts Chapters 6–12.",
         "Intra-frequency: the UE already measures the same frequency. The eNodeB delivers event A3 after RRC. No A2 is required.",
         "Inter-frequency and IRAT: the UE cannot measure other frequencies / RATs all the time. Event A2 (serving poor) starts measurement. Event A1 (serving good) stops it.",
@@ -342,35 +340,49 @@ def sheet_coverage(wb):
         "FDD↔TDD is treated as inter-frequency (LBFD-131111). Same engine as §5.3.",
     ])
 
-    d.h2("5.1.2  Measurement-based handover functions")
-    d.numbered([
-        "Intra-frequency (§5.2): measurement-based only. No blind. No initiation-decision phase. Handover runs when any neighbour meets A3.",
-        "Inter-frequency (§5.3): A2 starts gap-assisted measurement. The target event is A3, A4 or A5 from EUTRANINTERNFREQ.InterFreqHoEventType. A1 stops measurement if serving recovers.",
-        "E-UTRAN to UTRAN (§5.4): IRAT A2 starts. Target B1 (neighbour absolutely good) or B2 (serving poor AND neighbour good). Measurement path: UtranPsHoSwitch. A1 stops.",
-        "E-UTRAN to GERAN (§5.5): same A2/A1 idea unless a GERAN A2 offset is set. Target B1/B2 on GERAN. Typical path: GeranRedirectSwitch.",
-        "The UE reports the event. The eNodeB then picks the target, admits it, and executes (Chapter 4 engine).",
-    ])
+    d.pair_boxes(
+        ("5.1.2  Measurement-based handover functions", [
+            "Intra-frequency (§5.2): measurement-based only. No blind. No initiation-decision phase. Handover runs when any neighbour meets A3.",
+            "Inter-frequency (§5.3): A2 starts gap-assisted measurement. The target event is A3, A4 or A5 from EUTRANINTERNFREQ.InterFreqHoEventType. A1 stops measurement if serving recovers.",
+            "E-UTRAN to UTRAN (§5.4): IRAT A2 starts. Target B1 (neighbour absolutely good) or B2 (serving poor AND neighbour good). Measurement path: UtranPsHoSwitch. A1 stops.",
+            "E-UTRAN to GERAN (§5.5): same A2/A1 idea unless a GERAN A2 offset is set. Target B1/B2 on GERAN. Typical path: GeranRedirectSwitch.",
+            "The UE reports the event. The eNodeB then picks the target, admits it, and executes (Chapter 4 engine).",
+        ]),
+        ("5.1.3  Blind handover functions", [
+            "Preferential blind (blind handover). Switch: CELLHOPARACFG IfCoverPreBlindHoSwitch. Use only if the neighbouring cell / frequency fully contains the source. The measurement A2 starts handover without waiting for A3/A4/A5. If A1 arrives before completion, blind HO stops.",
+            "Emergency / emergent blind (blind redirection). Switch: CELLHOPARACFG EmcInterFreqBlindHoSwitch. After access the eNodeB checks for a suitable blind neighbour or frequency and delivers a separate blind A2 (CellHoParaCfg.BlindHoA1A2ThdRsrp / Rsrq). When that A2 is reported, the eNodeB redirects the UE to avoid drop. Blind A1 stops it.",
+            "If measurement A2 threshold ≤ blind A2, the eNodeB delivers only blind A2.",
+            "If no blind neighbouring cell or connected-mode frequency priority is configured, blind A2 is not delivered.",
+            "QCI-1: VolteRedirectSwitch allows blind redirect for voice. Release cause to the MME is User Inactivity. Blind IRAT is not the normal path for QCI-1.",
+        ], "The book has two blind types. Both apply to inter-frequency (§5.3) and, with the IRAT switches, to UTRAN/GERAN."),
+    )
 
-    d.h2("5.1.3  Blind handover functions")
-    d.para("The book has two blind types. Both apply to inter-frequency (§5.3) and, with the IRAT switches, to UTRAN/GERAN.")
-    d.numbered([
-        "Preferential blind (blind handover). Switch: CELLHOPARACFG IfCoverPreBlindHoSwitch. Use only if the neighbouring cell / frequency fully contains the source. The measurement A2 starts handover without waiting for A3/A4/A5. If A1 arrives before completion, blind HO stops.",
-        "Emergency / emergent blind (blind redirection). Switch: CELLHOPARACFG EmcInterFreqBlindHoSwitch. After access the eNodeB checks for a suitable blind neighbour or frequency and delivers a separate blind A2 (CellHoParaCfg.BlindHoA1A2ThdRsrp / Rsrq). When that A2 is reported, the eNodeB redirects the UE to avoid drop. Blind A1 stops it.",
-        "If measurement A2 threshold ≤ blind A2, the eNodeB delivers only blind A2.",
-        "If no blind neighbouring cell or connected-mode frequency priority is configured, blind A2 is not delivered.",
-        "QCI-1: VolteRedirectSwitch allows blind redirect for voice. Release cause to the MME is User Inactivity. Blind IRAT is not the normal path for QCI-1.",
-    ])
+    d.pair_boxes(
+        ("5.1.4  Event A2 involved in coverage-based handover", [
+            "A3-based inter-frequency A2: A3InterFreqHoA2ThdRsrp / Rsrq. Add operator / QCI / SPID offset, then clamp. Used when InterFreqHoEventType = EventA3.",
+            "A4/A5-based inter-frequency A2: InterFreqHoA2ThdRSRP / RSRQ. Used when InterFreqHoEventType = EventA4 or EventA5.",
+            "IRAT A2: InterRatHoA2ThdRsrp / Rsrq. UTRAN vs GERAN can take a further A2 offset.",
+            "Blind A2: CellHoParaCfg.BlindHoA1A2ThdRsrp / Rsrq. Separate from measurement A2.",
+            "A1 of the same family stops measurement or blind. Keep A1 a few dB above the paired A2.",
+            "A4/A5 target threshold must be a higher RSRP requirement than this coverage A2 (A4_thd > A2_thd), or the UE returns immediately.",
+            "ReduceInvalidA1A2RptSigSwitch: deliver A2 first at RRC setup; deliver A1 only after A2, to cut extra signalling.",
+        ], "Several A2 families exist. Mixing them is the usual reason coverage IFHO does not start or ping-pongs. InterFreqHoEventType picks the family."),
+        ("5.1.5  Principles for selecting UTRAN or GERAN", [
+            "IRAT A2 still starts the function. This section only chooses which RAT is measured / used after A2.",
+            "SrvccRatSteeringSwitch ON: for QCI-1 / SRVCC, measure only the highest-priority RAT for voice.",
+            "PsRatSteeringSwitch ON: for data (non-QCI-1), measure only the highest-priority RAT for PS.",
+            "RatLayerSwitch is legacy. Do not use it on this version.",
+            "With the same RF, a smaller B1 TimeToTrig toward UTRAN than GERAN makes UTRAN more likely.",
+            "CS/PS steering (§5.6) is a further filter on which UTRAN frequency (CsPriority / PsPriority). It is not a different A2.",
+            "Coverage IRAT TTT for offload-oriented IRAT must be < 3 s, or the 3 s measurement stop kills the report.",
+        ]),
+    )
 
-    d.h2("5.1.4  Event A2 involved in coverage-based handover")
-    d.para("Several A2 families exist. Mixing them is the usual reason coverage IFHO ‘does not start’ or ping-pongs. InterFreqHoEventType picks the family.")
-    d.numbered([
-        "A3-based inter-frequency A2: A3InterFreqHoA2ThdRsrp / Rsrq. Add operator / QCI / SPID offset, then clamp. Used when InterFreqHoEventType = EventA3.",
-        "A4/A5-based inter-frequency A2: InterFreqHoA2ThdRSRP / RSRQ. Used when InterFreqHoEventType = EventA4 or EventA5.",
-        "IRAT A2: InterRatHoA2ThdRsrp / Rsrq. UTRAN vs GERAN can take a further A2 offset.",
-        "Blind A2: CellHoParaCfg.BlindHoA1A2ThdRsrp / Rsrq. Separate from measurement A2.",
-        "A1 of the same family stops measurement or blind. Keep A1 a few dB above the paired A2.",
-        "A4/A5 target threshold must be a higher RSRP requirement than this coverage A2 (A4_thd > A2_thd), or the UE returns immediately.",
-        "ReduceInvalidA1A2RptSigSwitch: deliver A2 first at RRC setup; deliver A1 only after A2, to cut extra signalling.",
+    d.info_box("5.1.6  Other points that belong with this Common block", [
+        "Chapter 4 flags, NRT, object cap and SMeasure must already be correct. Coverage cannot start if the frequency is not a measurement object.",
+        "Coverage is necessary HO: any QCI may be admitted. Unnecessary features (Ch.6–12) wait.",
+        "Book MML examples (A1/A2 −85/−87 dBm, A4 −103 dBm) are command examples, not design values.",
+        "Align idle ThrshServLow with this A2/A5 thinking, but idle is a different document.",
     ])
     d.callout("CALC", "A2 families — do not mix them  ·  example not a design", [
         "A3-based IFHO A2:  A3InterFreqHoA2ThdRsrp  +  operator/QCI offset (eNBCnOpQciRsvdPara)   when InterFreqHoEventType = EventA3",
@@ -382,36 +394,15 @@ def sheet_coverage(wb):
         "Example ping-pong check: coverage A2 = −110 dBm, so A4 must be higher than −110 dBm (for example A4 = −105 dBm). Unsafe: A2 = −100 and A4 = −110 lets a neighbour at −107 dBm HO, then A2 fires on the new cell (−107 + 2 = −105 < −100).",
     ])
 
-    d.h2("5.1.5  Principles for selecting UTRAN or GERAN for inter-RAT handovers")
-    d.numbered([
-        "IRAT A2 still starts the function. This section only chooses which RAT is measured / used after A2.",
-        "SrvccRatSteeringSwitch ON: for QCI-1 / SRVCC, measure only the highest-priority RAT for voice.",
-        "PsRatSteeringSwitch ON: for data (non-QCI-1), measure only the highest-priority RAT for PS.",
-        "RatLayerSwitch is legacy. Do not use it on this version.",
-        "With the same RF, a smaller B1 TimeToTrig toward UTRAN than GERAN makes UTRAN more likely.",
-        "CS/PS steering (§5.6) is a further filter on which UTRAN frequency (CsPriority / PsPriority). It is not a different A2.",
-        "Coverage IRAT TTT for offload-oriented IRAT must be < 3 s, or the 3 s measurement stop kills the report.",
-    ])
-
-    d.h2("5.1.6  Other points that belong with this Overview")
-    d.numbered([
-        "Chapter 4 flags, NRT, object cap and SMeasure must already be correct. Coverage cannot start if the frequency is not a measurement object.",
-        "Coverage is necessary HO: any QCI may be admitted. Unnecessary features (Ch.6–12) wait.",
-        "Book MML examples (A1/A2 −85/−87 dBm, A4 −103 dBm) are command examples, not design values.",
-        "Align idle ThrshServLow with this A2/A5 thinking, but idle is a different document.",
-    ])
-
     d.h2("5.2  Coverage-based intra-frequency handover   ·   LBFD-00201801")
-    d.para("Overview of this sub-group: measurement-based only. No blind. No A2.")
-    d.h2("Principle")
-    d.numbered([
+    d.info_box("Principle", [
         "Turn ENODEBALGOSWITCH HoAlgoSwitch IntraFreqCoverHoSwitch = ON.",
         "After RRC setup the eNodeB delivers intra-frequency A3. There is no initiation-decision phase.",
         "Handover runs when any neighbour meets A3 for IntraFreqHoA3TimeToTrig.",
         "A3 enter: Mn + Ofn + Ocn − Hys > Ms + Ofs + Ocs + IntraFreqHoA3Offset.",
         "Trigger quantity: IntraFreqHoA3TrigQuan = RSRP (default).",
         "This does not move the UE to another band. Chapter 4 NRT and CIO must be valid. License: none.",
-    ])
+    ], "Overview of this sub-group: measurement-based only. No blind. No A2.")
     d.callout("CORE", "Core setting", "ENODEBALGOSWITCH HoAlgoSwitch IntraFreqCoverHoSwitch = ON. IntraFreqHoA3TrigQuan = RSRP (default).")
     d.callout("CALC", "Calculation + example (not a design)", [
         "A3 enter: Mn + Ofn + Ocn − Hys > Ms + Ofs + Ocs + IntraFreqHoA3Offset, true for IntraFreqHoA3TimeToTrig.",
@@ -428,17 +419,14 @@ def sheet_coverage(wb):
     d.callout("CONDITION", "Conditions", "Chapter 4 NRT and CIO must be valid. License: none.")
 
     d.h2("5.3  Coverage-based inter-frequency handover   ·   LBFD-00201802")
-    d.para("This sub-group uses the shared Overview (§5.1). The three types that exist inside 5.3 are listed first.")
-    d.h2("Overview of types in §5.3")
-    d.numbered([
+    d.info_box("Overview of types in §5.3", [
         "Measurement-based inter-frequency HO. A2 starts gap measurement. Target A3 / A4 / A5 from InterFreqHoEventType. A1 stops if serving recovers. Switch: CELLHOPARACFG InterFreqCoverHoSwitch.",
         "Preferential blind (blind handover). Same measurement A2, but the eNodeB hands over without A3/A4/A5. Use only if the target fully contains the source. Switch: IfCoverPreBlindHoSwitch.",
         "Emergency blind (blind redirection). Separate worse A2 (BlindHoA1A2Thd). Policy is redirection when quality is already too bad to finish measurement. Switch: EmcInterFreqBlindHoSwitch.",
-        "Event A2 involved: do not mix A3-based A2 with A4/A5-based A2. See §5.1.4 above.",
+        "Event A2 involved: do not mix A3-based A2 with A4/A5-based A2. See §5.1.4 in Common for sub-group.",
         "FDD↔TDD (LBFD-131111) is the same inter-frequency engine. UTRAN/GERAN selection principles in §5.1.5 apply only when IRAT is also on — they do not replace 5.3.",
-    ])
-    d.h2("Principle")
-    d.numbered([
+    ], "This sub-group uses the shared Common for sub-group (§5.1). The three types inside 5.3 are listed first.")
+    d.info_box("Principle", [
         "Configure Chapter 4 first (FREQ_MEAS_FLAG, NoHoFlag, object cap, SMeasure).",
         "Turn CELLHOPARACFG CellHoAlgoSwitch InterFreqCoverHoSwitch = ON.",
         "Set EUTRANINTERNFREQ InterFreqHoEventType = EventA3 or EventA4 or EventA5. This picks both the target event and the A2 family.",
@@ -518,7 +506,7 @@ def sheet_coverage(wb):
 
     d.h1("Combined summary")
     d.numbered([
-        "Read §5.1 Overview first. It supports every sub-group.",
+        "Read §5.1 Common for sub-group first. It supports every sub-group.",
         "Intra-frequency A3 is always-on coverage. No A2.",
         "Inter-frequency: pick one A2 family from the event type, then A3 or A4/A5, optional preferential / emergency blind.",
         "IRAT: separate A2, then B1/B2. §5.1.5 picks UTRAN vs GERAN. §5.6 only chooses which UTRAN layer.",

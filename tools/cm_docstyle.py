@@ -31,6 +31,8 @@ thin = Border(
     top=Side(style="hair", color=HAIR),
     bottom=Side(style="hair", color=HAIR),
 )
+BOX_LINE = "000000"
+box_side = Side(style="thin", color=BOX_LINE)
 bottom_rule = Border(bottom=Side(style="medium", color=NAVY))
 no_b = Border()
 
@@ -159,6 +161,7 @@ class DocSheet:
         bg = {"CORE": CORE_BG, "CONDITION": COND_BG, "CALC": CALC_BG}.get(kind, HDR_BG)
         tc = {"CORE": GOLD, "CONDITION": TEAL, "CALC": NAVY}.get(kind, NAVY)
         self.space(6)
+        start = self.r
         self._merge(1, COLS, "  " + title, size=10, bold=True, color=tc, bg=bg, align=L, h=18)
         self.r += 1
         body = lines if isinstance(lines, str) else "\n".join(lines)
@@ -166,6 +169,11 @@ class DocSheet:
         n = body.count("\n") + 1 + wrap_extra
         self._merge(1, COLS, body, size=11, color=TEXT, bg=bg, align=T, h=min(420, max(36, 16 + n * 16)))
         self.r += 1
+        self._paint_range(start, 1, self.r - 1, COLS)
+        for c in range(1, COLS + 1):
+            self.ws.cell(start, c).fill = fl(bg)
+            if self.r - 1 > start:
+                self.ws.cell(self.r - 1, c).fill = fl(bg)
         return self
 
     def two_col(self, left_title, left_items, right_title, right_items):
@@ -262,4 +270,118 @@ class DocSheet:
         link.hyperlink = Hyperlink(ref=link.coordinate, location=f"'{sheet}'!A1", display="Open sheet →")
         link.font = ft(11, True, LINK, underline="single")
         self.r += 1
+        return self
+
+    def _paint_range(self, r1, c1, r2, c2, bg=None):
+        ws = self.ws
+        for r in range(r1, r2 + 1):
+            for c in range(c1, c2 + 1):
+                cell = ws.cell(r, c)
+                if bg:
+                    cell.fill = fl(bg)
+                left = box_side if c == c1 else Side(style=None)
+                right = box_side if c == c2 else Side(style=None)
+                top = box_side if r == r1 else Side(style=None)
+                bottom = box_side if r == r2 else Side(style=None)
+                cell.border = Border(left=left, right=right, top=top, bottom=bottom)
+
+    def _write_box(self, start, c1, c2, title, items, intro=None):
+        """Write a titled numbered box starting at row `start`. Returns last row used."""
+        ws = self.ws
+        r = start
+        span = c2 - c1 + 1
+        chars = max(36, 16 * span)
+
+        ws.merge_cells(start_row=r, start_column=c1, end_row=r, end_column=c2)
+        t = ws.cell(r, c1, "  " + title)
+        t.font = ft(12, True, TEAL)
+        t.alignment = L
+        for c in range(c1, c2 + 1):
+            ws.cell(r, c).fill = fl(HDR_BG)
+        ws.row_dimensions[r].height = 22
+        r += 1
+
+        ws.merge_cells(start_row=r, start_column=c1, end_row=r, end_column=c2)
+        p = ws.cell(r, c1, ("  " + intro) if intro else "")
+        p.font = ft(10, False, MUTED, italic=True)
+        p.alignment = T
+        for c in range(c1, c2 + 1):
+            ws.cell(r, c).fill = fl(WHITE)
+        ws.row_dimensions[r].height = min(52, 18 + (len(intro or "") // chars) * 14) if intro else 10
+        r += 1
+
+        for i, it in enumerate(items, 1):
+            ws.merge_cells(start_row=r, start_column=c1, end_row=r, end_column=c2)
+            cell = ws.cell(r, c1, f"    {i}.  {it}")
+            cell.font = ft(11, False, TEXT)
+            cell.alignment = T
+            for c in range(c1, c2 + 1):
+                ws.cell(r, c).fill = fl(WHITE)
+            ws.row_dimensions[r].height = min(78, 24 + (len(it) // chars) * 16)
+            r += 1
+        return r - 1
+
+    def _pad_box(self, from_row, to_row, c1, c2):
+        ws = self.ws
+        for r in range(from_row, to_row + 1):
+            ws.merge_cells(start_row=r, start_column=c1, end_row=r, end_column=c2)
+            for c in range(c1, c2 + 1):
+                ws.cell(r, c).fill = fl(WHITE)
+            if not ws.row_dimensions[r].height:
+                ws.row_dimensions[r].height = 18
+
+    def info_box(self, title, items, intro=None):
+        """Full-width numbered box with a thin black border."""
+        self.space(8)
+        start = self.r
+        last = self._write_box(start, 1, COLS, title, items, intro)
+        self._paint_range(start, 1, last, COLS)
+        for c in range(1, COLS + 1):
+            self.ws.cell(start, c).fill = fl(HDR_BG)
+        self.r = last + 1
+        self.space(8)
+        return self
+
+    def pair_boxes(self, left, right):
+        """Two side-by-side numbered boxes. Each arg is (title, items) or (title, items, intro)."""
+        def unpack(spec):
+            if len(spec) == 2:
+                return spec[0], spec[1], None
+            return spec[0], spec[1], spec[2]
+
+        lt, li, ln = unpack(left)
+        rt, ri, rn = unpack(right)
+        self.space(8)
+        start = self.r
+        last_l = self._write_box(start, 1, 5, lt, li, ln)
+        last_r = self._write_box(start, 6, COLS, rt, ri, rn)
+        last = max(last_l, last_r)
+        if last_l < last:
+            self._pad_box(last_l + 1, last, 1, 5)
+        if last_r < last:
+            self._pad_box(last_r + 1, last, 6, COLS)
+
+        def ih(text, span):
+            chars = max(36, 16 * span)
+            return min(78, 24 + (len(text) // chars) * 16)
+
+        self.ws.row_dimensions[start].height = 22
+        intro_h = max(
+            min(52, 18 + (len(ln or "") // 80) * 14) if ln else 10,
+            min(52, 18 + (len(rn or "") // 64) * 14) if rn else 10,
+        )
+        self.ws.row_dimensions[start + 1].height = intro_h
+        n_items = max(len(li), len(ri))
+        for i in range(n_items):
+            hl = ih(li[i], 5) if i < len(li) else 18
+            hr = ih(ri[i], 4) if i < len(ri) else 18
+            self.ws.row_dimensions[start + 2 + i].height = max(hl, hr)
+        self._paint_range(start, 1, last, 5)
+        self._paint_range(start, 6, last, COLS)
+        for c in range(1, 6):
+            self.ws.cell(start, c).fill = fl(HDR_BG)
+        for c in range(6, COLS + 1):
+            self.ws.cell(start, c).fill = fl(HDR_BG)
+        self.r = last + 1
+        self.space(8)
         return self
