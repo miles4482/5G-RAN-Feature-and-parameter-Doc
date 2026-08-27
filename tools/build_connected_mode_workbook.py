@@ -8,14 +8,15 @@ from openpyxl import Workbook
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from cm_docstyle import DocSheet, NAVY, TEAL, LINK, ft, C
 
-VER = "v2.5"
-OUT = "/workspace/docs/4G_LTE_Mobility_Management/Connected_Mode_eRAN21.1_Feature_Sheets_v2.5.xlsx"
+VER = "v2.6"
+OUT = "/workspace/docs/4G_LTE_Mobility_Management/Connected_Mode_eRAN21.1_Feature_Sheets_v2.6.xlsx"
 DOC = "Mobility Management in Connected Mode Feature Parameter Description"
 ISSUE = "Huawei eRAN21.1 Issue 08 (2026-06-30)"
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 FIG_DIR = os.path.join(ROOT, "docs/4G_LTE_Mobility_Management/figures")
 FIG = {
     "A1": os.path.join(FIG_DIR, "fig_4_3_event_a1.png"),
+    "A1t": os.path.join(FIG_DIR, "fig_4_3_event_a1_teaching.png"),
     "A2": os.path.join(FIG_DIR, "fig_4_4_event_a2.png"),
     "A3": os.path.join(FIG_DIR, "fig_4_5_event_a3.png"),
     "A4": os.path.join(FIG_DIR, "fig_4_6_event_a4.png"),
@@ -81,7 +82,7 @@ def sheet_toc_fix(wb):
     d = DocSheet(ws, f"{DOC}  |  Contents")
     d.banner(f"{DOC}   ·   {ISSUE}   ·   {VER}")
     d.title("Contents", "How to read this file")
-    d.meta("Version v2.5. One sheet = one feature chapter. Measurement Event is document §4.1.4.2.1 (Table 4-8, charts, and worked formula examples for A1–A5 and B1–B2). Chapter 4 is basic for every later feature.")
+    d.meta("Version v2.6. One sheet = one feature chapter. Measurement Event is document §4.1.4.2.1 (Table 4-8, charts with teaching trigger points, and worked formula examples for A1–A5 and B1–B2). Chapter 4 is basic for every later feature.")
     d.nav([("This page", None), (S["ov"] + " →", S["ov"]), ("Ch.4 Basic (must)", S["b"]), ("Measurement Event", S["me"])])
     d.h1("What this file is")
     d.para(f"{DOC}. {ISSUE}.")
@@ -90,7 +91,7 @@ def sheet_toc_fix(wb):
         "One sheet per feature. Hyperlinks jump to the related feature in one click.",
         "Gridlines are off. Introduction → Common for sub-group / Overview (boxed) → Principle (numbered, boxed) → each sub-group → Combined summary → Parameter list.",
         "Chapter 5 Common for sub-group (document §5.1) is shared by 5.2–5.6. Chapters 6, 7 and 8 use the same Common-for-sub-group box style.",
-        "This file is version v2.5. Measurement Event is §4.1.4.2.1: Table 4-8, entering/leaving charts, and a worked calculation for every event.",
+        "This file is version v2.6. Measurement Event is §4.1.4.2.1: Table 4-8, charts with teaching dBm and trigger-point values, and a worked calculation for every event.",
         "Parameter list: Value = value only (blue). Command-example dBm in the book are not design values.",
         "FDD Feature IDs from §2.3. TDD uses the TD* equivalent unless the document says FDD only.",
         "LBFD-131111 FDD↔TDD is covered inside 5.3, 6.2 and 7.2 (inter-duplex = inter-frequency).",
@@ -380,7 +381,7 @@ def sheet_measurement(wb):
 
     d = start(
         wb, "me", "4.1.4.2.1", "Measurement Events",
-        "Document §4.1.4.2.1. Table 4-8, entering/leaving charts, and a worked formula example for Events A1–A5 and B1–B2. Feature ID LBFD-002018.",
+        "Document §4.1.4.2.1. Table 4-8, charts with teaching trigger-point values, and a worked formula example for Events A1–A5 and B1–B2. Feature ID LBFD-002018.",
         tab=TEAL,
     )
     d.h1("Overview of Mobility Events")
@@ -465,7 +466,7 @@ def sheet_measurement(wb):
                 "Thresh — threshold parameter for this event.",
                 "TimeToTrig — time-to-trigger duration.",
             ],
-            "note": "Entering and leaving of event A2. Same document schematic as Figure 4-3 (RSRP/RSRQ vs Time, Thresh, Hys, TimeToTrig).",
+            "note": "Teaching values and trigger / leave point values are marked on the chart. Same event as Figure 4-4.",
             "calc": [
                 "Formula. Enter: Ms + Hys < Thresh.  Leave: Ms − Hys > Thresh.  Must hold for TimeToTrig = 320 ms.",
                 "Teaching values. Ms = −95 dBm. Hys = 2 dB. Thresh = −100 dBm.",
@@ -495,7 +496,7 @@ def sheet_measurement(wb):
                 "Off — offset parameter for this event (a3-Offset).",
                 "TimeToTrig — time-to-trigger duration.",
             ],
-            "note": "Entering and leaving of event A3. Neighbour vs serving plus offset. Same document schematic as Figure 4-3.",
+            "note": "Teaching values and trigger / leave point values are marked on the chart. Neighbour vs serving plus offset.",
             "calc": [
                 "Formula. Enter: Mn + Ofn + Ocn − Hys > Ms + Ofs + Ocs + Off.  Leave: Mn + Ofn + Ocn + Hys < Ms + Ofs + Ocs + Off.",
                 "Teaching values. Ms = −95 dBm. Mn = −90 dBm. Hys = 2 dB. Ofn = Ofs = 0. Ocn = Ocs = 0. Off = 2 dB.",
@@ -523,7 +524,7 @@ def sheet_measurement(wb):
                 "Thresh — threshold parameter for this event.",
                 "TimeToTrig — time-to-trigger duration.",
             ],
-            "note": "Entering and leaving of event A4. Neighbour vs an absolute threshold. Same document schematic as Figure 4-3.",
+            "note": "Teaching values and trigger / leave point values are marked on the chart. Neighbour vs an absolute threshold.",
             "calc": [
                 "Formula. Enter: Mn + Ofn + Ocn − Hys > Thresh.  Leave: Mn + Ofn + Ocn + Hys < Thresh.",
                 "Teaching values. Mn = −90 dBm. Hys = 2 dB. Ofn = 0. Ocn = 0. Thresh = −105 dBm. Neighbour need not beat serving.",
@@ -552,7 +553,7 @@ def sheet_measurement(wb):
                 "Thresh2 — neighbouring-cell threshold for this event.",
                 "TimeToTrig — time-to-trigger duration.",
             ],
-            "note": "Entering and leaving of event A5. Serving vs Thresh1 and neighbour vs Thresh2. Same document schematic as Figure 4-3.",
+            "note": "Teaching values and trigger / leave point values are marked on the chart. Serving vs Thresh1 and neighbour vs Thresh2.",
             "calc": [
                 "Formula. Enter: (Ms + Hys < Thresh1) AND (Mn + Ofn + Ocn − Hys > Thresh2).  Both must hold for TimeToTrig.",
                 "Leave: (Ms − Hys > Thresh1) OR (Mn + Ofn + Ocn + Hys < Thresh2).  Either is enough, for TimeToTrig.",
@@ -579,7 +580,7 @@ def sheet_measurement(wb):
                 "Thresh — threshold parameter for this event.",
                 "TimeToTrig — time-to-trigger duration.",
             ],
-            "note": "Entering and leaving of event B1. Inter-RAT neighbour vs an absolute threshold. Same document schematic as Figure 4-3.",
+            "note": "Teaching values and trigger / leave point values are marked on the chart. Inter-RAT neighbour vs an absolute threshold.",
             "calc": [
                 "Formula. Enter: Mn + Ofn − Hys > Thresh.  Leave: Mn + Ofn + Hys < Thresh.  Mn is the inter-RAT neighbour.",
                 "Teaching values. IRAT Mn = −92. Hys = 2 dB. Ofn = 0. Thresh = −100. Same idea as A4, other RAT.",
@@ -607,7 +608,7 @@ def sheet_measurement(wb):
                 "Thresh2 — inter-RAT neighbouring-cell threshold for this event.",
                 "TimeToTrig — time-to-trigger duration.",
             ],
-            "note": "Entering and leaving of event B2. Serving vs Thresh1 and inter-RAT neighbour vs Thresh2. Same document schematic as Figure 4-3.",
+            "note": "Teaching values and trigger / leave point values are marked on the chart. Serving vs Thresh1 and inter-RAT neighbour vs Thresh2.",
             "calc": [
                 "Formula. Enter: (Ms + Hys < Thresh1) AND (Mn + Ofn − Hys > Thresh2).  Mn is the inter-RAT neighbour.",
                 "Leave: (Ms − Hys > Thresh1) OR (Mn + Ofn + Hys < Thresh2).  Same shape as A5, other RAT.",
@@ -630,7 +631,12 @@ def sheet_measurement(wb):
         d.callout("CALC", f"Example with values  ·  Event {ev['name']}  ·  for understanding only  ·  not a live design", ev["calc"])
         d.h2(f"Figure {ev['fig']}  Entering and leaving of event {ev['name']}")
         d.para(ev["note"])
-        d.embed_figure(FIG[ev["name"]], width_px=1100)
+        if ev["name"] == "A1":
+            d.embed_figure(FIG["A1"], width_px=1100)
+            d.para("Same Event A1 with the teaching values on the chart. The blue points are the trigger and leave values from the CALC box (Ms − Hys = −97 dBm at enter, Ms + Hys = −103 dBm at leave). For understanding only. Not a live design.")
+            d.embed_figure(FIG["A1t"], width_px=1100)
+        else:
+            d.embed_figure(FIG[ev["name"]], width_px=1100)
 
     for i, name in enumerate(jump_names):
         cell = d.ws.cell(chip_row, i + 1)
@@ -645,7 +651,7 @@ def sheet_measurement(wb):
     d.info_box("Combined summary", [
         "An event is an indication of signal quality. Table 4-8 is the definition of each event (A1–A5, B1, B2).",
         "Every event uses hysteresis and TimeToTrig. The entering or leaving inequality must stay true for the whole TimeToTrig.",
-        "Worked numbers on this sheet are one teaching set (Ms = −95 dBm, Hys = 2 dB, TTT = 320 ms). They are not a live design and must not go in the Value column.",
+        "Worked numbers on this sheet are one teaching set (Ms = −95 dBm, Hys = 2 dB, TTT = 320 ms). They are marked on each chart at the trigger and leave points. They are not a live design and must not go in the Value column.",
         "A1 serving good / A2 serving poor. A3 neighbour relatively better. A4 neighbour absolutely good. A5 serving poor AND neighbour good.",
         "B1 / B2 are the inter-RAT pair of A4 / A5.",
         "Which event a feature uses, and the live dBm, stay on Chapter 4 and the feature sheet. This sheet does not set a design value.",
