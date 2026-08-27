@@ -277,48 +277,81 @@ class DocSheet:
         self.space(16)
         self._merge(1, COLS, "  Feature Activation", size=13, bold=True, color=WHITE, bg=ACT_BG, align=L, h=26)
         self.r += 1
-        self.space(8)
+        self.space(4)
+        return self
+
+    def act_subtitle(self, text="Step by Step MML Commands"):
+        self._merge(1, COLS, "  " + text, size=12, bold=True, color=ACT_BG, align=L, h=22)
+        self.r += 1
+        self.space(6)
         return self
 
     def activation_heads(self):
+        """SN | MML with Value | Target | Feature | Additional Comments | Ref"""
         ws, r = self.ws, self.r
         ws.row_dimensions[r].height = 22
-        ws.merge_cells(start_row=r, start_column=2, end_row=r, end_column=6)
-        ws.merge_cells(start_row=r, start_column=7, end_row=r, end_column=COLS)
-        specs = [(1, 1, "SN"), (2, 6, "MML command  (in sequence)"), (7, COLS, "Remark")]
+        specs = [
+            (1, 1, "SN"),
+            (2, 4, "MML with Value"),
+            (5, 6, "Target"),
+            (7, 7, "Feature"),
+            (8, 8, "Additional Comments"),
+            (9, 9, "Ref"),
+        ]
         for c1, c2, name in specs:
+            if c1 != c2:
+                ws.merge_cells(start_row=r, start_column=c1, end_row=r, end_column=c2)
             cell = ws.cell(r, c1, name)
-            cell.font = ft(9, True, WHITE)
-            cell.fill = fl(ACT_BG)
+            cell.font = ft(9, True, NAVY)
+            cell.fill = fl(HDR_BG)
             cell.alignment = C
             for c in range(c1, c2 + 1):
-                ws.cell(r, c).fill = fl(ACT_BG)
-                ws.cell(r, c).border = Border(bottom=Side(style="thin", color=ACT_BG))
+                ws.cell(r, c).fill = fl(HDR_BG)
+                ws.cell(r, c).border = Border(
+                    left=Side(style="thin", color=LINE),
+                    right=Side(style="thin", color=LINE),
+                    top=Side(style="thin", color=LINE),
+                    bottom=Side(style="thin", color=LINE),
+                )
         self.r += 1
         return self
 
-    def activation_row(self, sn, mml, remark):
+    def activation_row(self, sn, mml, target, feature, comments, ref):
         ws, r = self.ws, self.r
-        ws.merge_cells(start_row=r, start_column=2, end_row=r, end_column=6)
-        ws.merge_cells(start_row=r, start_column=7, end_row=r, end_column=COLS)
-        h = min(72, 22 + max(len(str(mml)) // 70, len(str(remark)) // 55) * 12)
+        merges = [(2, 4), (5, 6)]
+        for c1, c2 in merges:
+            ws.merge_cells(start_row=r, start_column=c1, end_row=r, end_column=c2)
+        h = min(80, 22 + max(
+            len(str(mml)) // 55,
+            len(str(target)) // 40,
+            len(str(feature)) // 18,
+            len(str(comments)) // 40,
+            len(str(ref)) // 40,
+        ) * 12)
         ws.row_dimensions[r].height = h
         bg = ACT_HDR if sn % 2 else WHITE
-        a = ws.cell(r, 1, sn)
-        b = ws.cell(r, 2, mml)
-        c = ws.cell(r, 7, remark)
-        a.font = ft(10, True, TEXT)
-        b.font = Font(name="Consolas", size=9, color=TEXT)
-        c.font = ft(10, False, TEXT)
-        a.alignment = C
-        b.alignment = T
-        c.alignment = T
+        cells = [
+            (1, sn, ft(10, True, TEXT), C),
+            (2, mml, Font(name="Consolas", size=9, color=TEXT), T),
+            (5, target, ft(10, False, TEXT), T),
+            (7, feature, ft(10, True, TEXT), T),
+            (8, comments, ft(10, False, TEXT), T),
+            (9, ref, ft(9, False, MUTED), T),
+        ]
+        tbl = Border(
+            left=Side(style="thin", color=LINE),
+            right=Side(style="thin", color=LINE),
+            top=Side(style="thin", color=LINE),
+            bottom=Side(style="thin", color=LINE),
+        )
         for col in range(1, COLS + 1):
             ws.cell(r, col).fill = fl(bg)
-            ws.cell(r, col).border = Border(bottom=Side(style="hair", color=LINE))
-        a.fill = fl(bg)
-        b.fill = fl(bg)
-        c.fill = fl(bg)
+            ws.cell(r, col).border = tbl
+        for col, val, font, align in cells:
+            cell = ws.cell(r, col, val)
+            cell.font = font
+            cell.alignment = align
+            cell.fill = fl(bg)
         self.r += 1
         return self
 

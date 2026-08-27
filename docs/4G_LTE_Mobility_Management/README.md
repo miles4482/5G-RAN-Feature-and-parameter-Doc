@@ -4,9 +4,9 @@ One Word-like Excel file. One sheet per feature chapter of *Mobility Management 
 
 ## File
 
-Current version: **v3.0**
+Current version: **v3.1**
 
-[Connected_Mode_eRAN21.1_Feature_Sheets_v3.0.xlsx](./Connected_Mode_eRAN21.1_Feature_Sheets_v3.0.xlsx)
+[Connected_Mode_eRAN21.1_Feature_Sheets_v3.1.xlsx](./Connected_Mode_eRAN21.1_Feature_Sheets_v3.1.xlsx)
 
 ## How to read
 
@@ -15,11 +15,11 @@ Open **00 Contents**, then **04 Basic Functions**, then **Measurement Event**, t
 Every feature sheet uses the same order:
 
 - **Introduction** — sub-groups first
-- **Overview** — boxed types that support all sub-groups (Coverage: measurement-based, preferential blind, emergency-based, Event A2 families, UTRAN vs GERAN pick)
+- **Overview** — boxed types that support all sub-groups
 - **Principle** — numbered points
 - Each **sub-group**, then **Combined summary**, then **Parameter list**
-- **Feature Activation** (lavender bar, last) — Chapter 4 basic MML first, then this feature’s MML in sequence. Remark at the end of each command.
+- **Feature Activation** (purple bar, last) — subtitle **Step by Step MML Commands**
 
-Gridlines are off. Thin black borders on boxes.
+Feature Activation columns: **SN | MML with Value | Target | Feature | Additional Comments | Ref**. Basic rows first (Chapter 4), then this feature. Gridlines off.
 
 Parameter list: SN | MO | Parameter | **Value** (blue, value only) | Comment | Core | Sub-group | **Parameter Meaning** | **Reference**.

@@ -8,8 +8,8 @@ from openpyxl import Workbook
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from cm_docstyle import DocSheet, NAVY, TEAL, LINK, ft, C
 
-VER = "v3.0"
-OUT = "/workspace/docs/4G_LTE_Mobility_Management/Connected_Mode_eRAN21.1_Feature_Sheets_v3.0.xlsx"
+VER = "v3.1"
+OUT = "/workspace/docs/4G_LTE_Mobility_Management/Connected_Mode_eRAN21.1_Feature_Sheets_v3.1.xlsx"
 DOC = "Mobility Management in Connected Mode Feature Parameter Description"
 ISSUE = "Huawei eRAN21.1 Issue 08 (2026-06-30)"
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -31,158 +31,19 @@ def R(feat, sec):
     return f"{feat}  ·  {DOC}  ·  eRAN21.1 Issue 08  ·  {sec}"
 
 
-# Placeholders in MML — operator replaces with the live object before paste to MAE.
-LC = "<LocalCellId>"
-EARFCN = "<DlEarfcn>"
-GID = "<HoGroupId>"
-
-BASIC_MML = [
-    (f"MOD EUTRANINTERNFREQ: DlEarfcn={EARFCN}, FreqMeasFlag=MEASURE;",
-     "Ch.4 basic. FREQ_MEAS_FLAG selected. Frequency must be measured or every later HO is silent."),
-    (f"MOD EUTRANINTERNFREQ: DlEarfcn={EARFCN}, HoTrgFreqForbidMeasFlag=BOOLEAN_FALSE;",
-     "Ch.4 basic. HO_TRG_FREQ_FORBID_MEAS_FLAG deselected for required HO targets."),
-    (f"MOD EUTRANINTERFREQNCELL: LocalCellId={LC}, Mcc=<MCC>, Mnc=<MNC>, eNodeBId=<eNBId>, CellId=<CID>, NoHoFlag=PERMIT_HO;",
-     "Ch.4 basic. Neighbour allowed as HO target."),
-    (f"MOD CELLUEMEASCONTROLCFG: LocalCellId={LC}, MaxNonIntraMeasObjNum=<N>;",
-     "Ch.4 basic. Object cap ≥ the number of inter-frequency objects this cell must measure. Over cap = random drop, not MLB."),
-    (f"MOD INTRARATHOCOMM: InterFreqHoA1A2TrigQuan=RSRP, InterFreqHoA4TrigQuan=RSRP;",
-     "Ch.4 basic. RSRP trigger. RSRQ moves with scheduler load."),
-    (f"MOD INTERFREQHOGROUP: LocalCellId={LC}, InterFreqHoGroupId={GID}, InterFreqHoA4TimeToTrig=320;",
-     "Ch.4 basic. A4 TTT must not be 5120 ms if FreqPri / CQI / service-based IFHO is required (Table 4-9). 5120 ms means off."),
-    (f"MOD HOMEASCOMM: SMeasure=<from MR>;",
-     "Ch.4 basic. Calibrate from MR. A too-high SMeasure silently kills A4. Do not copy book command-example dBm."),
-    (f"MOD CELLHO: LocalCellId={LC}, IntraRatHoRprtAmount=1;",
-     "Ch.4 basic. Event-triggered intra-RAT reporting (amount = 1). Periodical reporting is not the connected-mode HO path."),
-    (f"MOD CELLHO: LocalCellId={LC}, InterRatHoRprtAmount=1;",
-     "Ch.4 basic. Event-triggered inter-RAT reporting (amount = 1). Same idea as intra-RAT."),
-]
-
-# Feature-own MML after Chapter 4 basics. Bit -1 = ON, -0 = OFF. Threshold dBm are never hard-coded.
-MML_COVERAGE = [
-    (f"MOD ENODEBALGOSWITCH: HoAlgoSwitch=IntraFreqCoverHoSwitch-1;",
-     "§5.2. Coverage intra-frequency A3. Always-on. No A2. No blind."),
-    (f"MOD CELLHOPARACFG: LocalCellId={LC}, CellHoAlgoSwitch=InterFreqCoverHoSwitch-1;",
-     "§5.3. Coverage inter-frequency HO (measurement-based)."),
-    (f"MOD EUTRANINTERNFREQ: DlEarfcn={EARFCN}, InterFreqHoEventType=EventA3;",
-     "§5.3. Picks target event and the A2 family. Use EventA3 or EventA4 or EventA5. Do not mix A2 families."),
-    (f"MOD CELLHOPARACFG: LocalCellId={LC}, CellHoAlgoSwitch=IfCoverPreBlindHoSwitch-1;",
-     "§5.3 preferential blind. ON only if the neighbouring cell/frequency fully contains the source. Otherwise -0."),
-    (f"MOD CELLHOPARACFG: LocalCellId={LC}, CellHoAlgoSwitch=EmcInterFreqBlindHoSwitch-1;",
-     "§5.3 emergency blind redirection. Separate worse A2 (BlindHoA1A2Thd). Leave -0 if not required."),
-    (f"MOD CELLALGOSWITCH: LocalCellId={LC}, CellAlgoSwitch=ReduceInvalidA1A2RptSigSwitch-1;",
-     "§5.3. Deliver A2 first at RRC setup; deliver A1 only after A2, to cut extra signalling."),
-    (f"MOD ENODEBALGOSWITCH: HoAlgoSwitch=UtranPsHoSwitch-1;",
-     "§5.4. Measurement-based PS HO to UTRAN. IRAT A2 then B1/B2. Offload TTT < 3 s."),
-    (f"MOD ENODEBALGOSWITCH: HoAlgoSwitch=UtranRedirectSwitch-1;",
-     "§5.4. Blind / redirect to UTRAN."),
-    (f"MOD ENODEBALGOSWITCH: HoAlgoSwitch=GeranRedirectSwitch-1;",
-     "§5.5. Coverage IRAT / redirect to GERAN. Blind IRAT is not the normal path for QCI-1."),
-    (f"MOD ENODEBALGOSWITCH: HoAlgoSwitch=SrvccRatSteeringSwitch-1;",
-     "§5.1.5. After IRAT A2, measure only the highest-priority RAT for QCI-1 / SRVCC. RatLayerSwitch is legacy."),
-    (f"MOD ENODEBALGOSWITCH: HoAlgoSwitch=PsRatSteeringSwitch-1;",
-     "§5.1.5. After IRAT A2, measure only the highest-priority RAT for data (non-QCI-1)."),
-    (f"MOD CELLALGOSWITCH: LocalCellId={LC}, FreqLayerSwitch=UtranFreqLayerMeasSwitch-1;",
-     "§5.6 CS/PS steering. Needs §5.4 first. Then set UTRANNFREQ CsPriority / PsPriority. Priority_0 = do not use."),
-]
-
-MML_SERVICE = [
-    (f"MOD ENODEBALGOSWITCH: HoAlgoSwitch=ServiceBasedInterFreqHoSwitch-1;",
-     "§6.2 eNodeB master. Unnecessary QCI steering. Event A4. Both this and the cell bit are required."),
-    (f"MOD CELLALGOSWITCH: LocalCellId={LC}, HoAlgoSwitch=SrvBasedInterFreqHoSw-1;",
-     "§6.2 cell allow. Bind QCI on CNOPERATORQCIPARA → ServiceIfHoCfgGroup. InterFreqHoState=PERMIT_HO."),
-    (f"MOD SERVICEIFHOCFGGROUP: LocalCellId={LC}, ServiceIfHoCfgGroupId=<GrpId>, InterFreqHoState=PERMIT_HO;",
-     "§6.2. QCI is allowed to leave the serving frequency. Put the target EARFCN on SERVICEIFDLEARFCNGRP."),
-    (f"MOD ENODEBALGOSWITCH: HoAlgoSwitch=UtranServiceHoSwitch-1;",
-     "§6.3. Service-based IRAT to UTRAN. Event B1. Bind QCI. Offload TTT < 3 s."),
-    (f"MOD ENODEBALGOSWITCH: HoAlgoSwitch=GeranServiceHoSwitch-1;",
-     "§6.4. Service-based IRAT to GERAN. Event B1. Same SERVICEIRHOCFGGROUP bind as 6.3."),
-]
-
-MML_DISTANCE = [
-    (f"MOD CELLALGOSWITCH: LocalCellId={LC}, HoAlgoSwitch=DistBasedHoSwitch-1;",
-     "Ch.7 master. TA-based overshoot. Start when distance > DistBasedHoThd for 10 s."),
-    (f"MOD DISTBASEDHO: LocalCellId={LC}, DistBasedMeasObjType=EUTRAN;",
-     "§7.2 LTE target. Then A4 still qualifies the neighbour. Must stay better than coverage A2."),
-    (f"MOD DISTBASEDHO: LocalCellId={LC}, DistBasedMeasObjType=UTRAN;",
-     "§7.3. Add only if IRAT to UTRAN is the overshoot target. Event B1. Leave off if not used."),
-    (f"MOD DISTBASEDHO: LocalCellId={LC}, DistBasedMeasObjType=GERAN;",
-     "§7.4. Add only if IRAT to GERAN is the overshoot target. Event B1. Leave off if not used."),
-]
-
-MML_ULQ = [
-    (f"MOD ENODEBALGOSWITCH: HoAlgoSwitch=UlQualityInterFreqHoSwitch-1;",
-     "§8.2. UL MCS + IBLER starts IFHO. Target A4 = coverage A4 + UlBadQualHoA4Offset."),
-    (f"MOD ENODEBALGOSWITCH: HoAlgoSwitch=UlQualityInterRATHoSwitch-1;",
-     "§8.3. Same UL start; target B1 to UTRAN or GERAN. Leave -0 if IRAT is not required."),
-]
-
-MML_CQI = [
-    (f"MOD CELLHOPARACFG: LocalCellId={LC}, CellHoAlgoSwitch=<confirm CQI-based IFHO bit in MAE>-1;",
-     "§9 FDD. Confirm the exact bit name in MAE on this eRAN21.1. Do not invent a bit. A4 TTT must not be 5120 ms."),
-]
-
-MML_SREQ = [
-    (f"MOD CELLALGOSWITCH: LocalCellId={LC}, HoAllowedSwitch=ServiceReqInterFreqHoSwitch-1;",
-     "§10. FDD: cell-level. Starts on bearer setup / modify. Own A4 SrvReqHoA4ThdRsrp. Not mixed with coverage A2."),
-    (f"MOD SERVICEIFHOCFGGROUP: LocalCellId={LC}, ServiceIfHoCfgGroupId=<GrpId>, InterFreqHoState=PERMIT_HO;",
-     "§10. QCI may leave serving frequency at the request. Cap wait with A4RptWaitingTimer."),
-]
-
-MML_FREQPRI = [
-    (f"MOD CELLALGOSWITCH: LocalCellId={LC}, FreqPriorityHoSwitch=FreqPriorIFHOSwitch-1;",
-     "§11 master. Measurement-based frequency-priority IFHO. A1 (serving good) then A4 (high-priority freq)."),
-    (f"MOD CELLALGOSWITCH: LocalCellId={LC}, FreqPriorityHoSwitch=MlbBasedFreqPriHoSwitch-1;",
-     "§11. ON when MLB is used so heavy load is owned by MLB, not FreqPri."),
-    (f"MOD CELLALGOSWITCH: LocalCellId={LC}, FreqPriorityHoSwitch=A2BasedFreqPriHoSwitch-0;",
-     "§11. Document: deselect in same-coverage multi-band."),
-    (f"MOD EUTRANINTERNFREQ: DlEarfcn={EARFCN}, FreqPriBasedHoMeasFlag=ENABLE;",
-     "§11. This EARFCN is a FreqPri measurement object. Also set MeasPriorityForFreqPriHo."),
-]
-
-MML_SPEED = [
-    (f"MOD CELLHOPARACFG: LocalCellId={LC}, CellHoAlgoSwitch=InterFreqCoverHoSwitch-1;",
-     "§12 prerequisite. Coverage inter-frequency HO (Ch.5.3) must be ON first."),
-    (f"MOD CELLALGOSWITCH: LocalCellId={LC}, HoAlgoSwitch=<confirm speed-based IFHO bit in MAE>-1;",
-     "§12 FDD. Confirm the exact bit name in MAE. Do not invent a bit. Do not confuse with HighSpeedUserRedirectSwitch."),
-]
-
-MML_UTRAN_MPLMN = [
-    (f"MOD ENODEBALGOSWITCH: HoAlgoSwitch=UtranPsHoSwitch-1;",
-     "Prerequisite from §5.4. This chapter does not start a new event."),
-    (f"MOD ENODEBALGOSWITCH: MultiOpCtrlSwitch=UtranSepOpMobilitySwitch-1;",
-     "§13 FDD LOFD-070216. Separate UTRAN mobility policy per PLMN / RNC."),
-    (f"ADD UTRANNETWORKCAPCFG: Mcc=<MCC>, Mnc=<MNC>, RncId=<RncId>, PsHoCapCfg=<as RNC>;",
-     "§13. One row per operator RNC. Also set Voip / SRVCC / SI-by-RIM / ultra-flash bits as that RNC actually supports."),
-]
-
-MML_GERAN_MPLMN = [
-    (f"MOD ENODEBALGOSWITCH: HoAlgoSwitch=GeranRedirectSwitch-1;",
-     "Prerequisite from §5.5. This chapter does not start a new event."),
-    (f"MOD ENODEBALGOSWITCH: MultiOpCtrlSwitch=GeranSepOpMobilitySwitch-1;",
-     "§14 LOFD-111204. Confirm exact bit in MAE. Separate GERAN mobility policy per PLMN / BSC."),
-    (f"ADD GERANNETWORKCAPCFG: Mcc=<MCC>, Mnc=<MNC>, BscId=<BscId>;",
-     "§14. Confirm the MO name in MAE. One row per operator BSC. Set HO / CCO / SI-by-RIM as that BSC actually supports."),
-]
-
-
-def write_activation(d, extra=None, include_basic=True, note=None):
-    extra = extra or []
-    d.act_title()
-    d.para(note or (
-        "Commands are in activation order. Chapter 4 basic commands come first, then this feature. "
-        "Replace <LocalCellId> / <DlEarfcn> / <HoGroupId> / PLMN / cell IDs with the live object before paste to MAE. "
-        "Bit -1 = ON, -0 = OFF. Threshold dBm: calibrate from MR — do not copy book command-example dBm into the command."
-    ))
-    d.activation_heads()
-    sn = 1
-    rows = (BASIC_MML if include_basic else []) + list(extra)
-    if not rows:
-        d.activation_row(1, "—", "No activation command in this chapter.")
-        return d
-    for mml, remark in rows:
-        d.activation_row(sn, mml, remark)
-        sn += 1
-    return d
+from cm_activation import (
+    write_activation,
+    MML_COVERAGE,
+    MML_SERVICE,
+    MML_DISTANCE,
+    MML_ULQ,
+    MML_CQI,
+    MML_SREQ,
+    MML_FREQPRI,
+    MML_SPEED,
+    MML_UTRAN_MPLMN,
+    MML_GERAN_MPLMN,
+)
 
 # Sheet names (Excel limit 31 characters)
 S = {
@@ -236,7 +97,7 @@ def sheet_toc_fix(wb):
     d = DocSheet(ws, f"{DOC}  |  Contents")
     d.banner(f"{DOC}   ·   {ISSUE}   ·   {VER}")
     d.title("Contents", "How to read this file")
-    d.meta("Version v3.0. One sheet = one feature chapter. Gridlines off. Chapter 4 is basic for every later feature. Feature Activation (MML in sequence) is after the Parameter list on every sheet.")
+    d.meta("Version v3.1. One sheet = one feature chapter. Gridlines off. Chapter 4 is basic for every later feature. Feature Activation is after the Parameter list: Step by Step MML Commands with SN | MML with Value | Target | Feature | Additional Comments | Ref.")
     d.nav([("This page", None), (S["ov"] + " →", S["ov"]), ("Ch.4 Basic (must)", S["b"]), ("Measurement Event", S["me"])])
     d.h1("What this file is")
     d.para(f"{DOC}. {ISSUE}.")
@@ -246,7 +107,7 @@ def sheet_toc_fix(wb):
         "Introduction (sub-groups first) → Overview (boxed types that support all sub-groups) → Principle (numbered) → each sub-group → Combined summary → Parameter list → Feature Activation.",
         "Chapter 5 Overview is document §5.1 and is shared by 5.2–5.6: measurement-based, preferential blind, emergency blind, Event A2 families, UTRAN vs GERAN pick.",
         "Parameter list: Value = value only (blue). Comments stay in the Comment column. Book command-example dBm are not design values.",
-        "Feature Activation (lavender bar, last section): Chapter 4 basic MML first, then this feature’s MML in document order. Remarks sit at the end of each command. Bit -1 = ON, -0 = OFF.",
+        "Feature Activation (purple bar, last section): subtitle Step by Step MML Commands. Columns SN | MML with Value | Target | Feature | Additional Comments | Ref. Basic rows first, then this feature. Bit -1 = ON, -0 = OFF.",
         "FDD Feature IDs from §2.3. TDD uses the TD* equivalent unless the document says FDD only.",
         "LBFD-131111 FDD↔TDD is covered inside 5.3, 6.2 and 7.2 (inter-duplex = inter-frequency).",
     ])
