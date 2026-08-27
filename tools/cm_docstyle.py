@@ -1,5 +1,8 @@
 """Word-like Excel layout: no gridlines, headings, callouts, hyperlinks."""
 
+import struct
+
+from openpyxl.drawing.image import Image as XLImage
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.hyperlink import Hyperlink
@@ -394,5 +397,67 @@ class DocSheet:
         for c in range(6, COLS + 1):
             self.ws.cell(start, c).fill = fl(HDR_BG)
         self.r = last + 1
+        self.space(8)
+        return self
+
+    def jump(self, label, sheet):
+        """Full-width hyperlink row to another sheet."""
+        self.space(4)
+        cell = self._merge(1, COLS, "  " + label, size=11, bold=True, color=LINK, align=L, h=22)
+        cell.hyperlink = Hyperlink(ref=cell.coordinate, location=f"'{sheet}'!A1", display=label)
+        cell.font = ft(11, True, LINK, underline="single")
+        self.r += 1
+        return self
+
+    def data_table(self, headers, rows, spans):
+        """Document-style table. spans: list of (c1, c2) inclusive for each column."""
+        ws = self.ws
+
+        def paint_row(values, header=False, stripe=False):
+            r = self.r
+            chars = [max(12, 14 * (c2 - c1 + 1)) for c1, c2 in spans]
+            hgt = 22
+            for val, nchar in zip(values, chars):
+                hgt = max(hgt, min(72, 20 + (len(str(val)) // nchar) * 14))
+            ws.row_dimensions[r].height = 22 if header else hgt
+            bg = NAVY if header else (HDR_BG if stripe else WHITE)
+            fg = WHITE if header else TEXT
+            for i, (val, (c1, c2)) in enumerate(zip(values, spans)):
+                ws.merge_cells(start_row=r, start_column=c1, end_row=r, end_column=c2)
+                cell = ws.cell(r, c1, val)
+                cell.font = ft(10 if header else 11, True if header or i == 0 else False, fg)
+                cell.alignment = C if (header or i == 0) else T
+                cell.fill = fl(bg)
+                for c in range(c1, c2 + 1):
+                    ws.cell(r, c).fill = fl(bg)
+                    ws.cell(r, c).border = Border(
+                        left=box_side if c == c1 else Side(style=None),
+                        right=box_side if c == c2 else Side(style=None),
+                        top=box_side,
+                        bottom=box_side,
+                    )
+                cell.border = Border(left=box_side, right=box_side, top=box_side, bottom=box_side)
+            self.r += 1
+
+        paint_row(headers, header=True)
+        for i, row in enumerate(rows):
+            paint_row(row, stripe=(i % 2 == 0))
+        self.space(8)
+        return self
+
+    def embed_figure(self, path, width_px=None):
+        """Embed a document PNG at native size (or scaled to width_px). Reserves one tall row."""
+        with open(path, "rb") as f:
+            f.read(16)
+            iw, ih = struct.unpack(">II", f.read(8))
+        if width_px is None:
+            width_px = iw
+        height_px = int(round(width_px * ih / float(iw)))
+        img = XLImage(path)
+        img.width = width_px
+        img.height = height_px
+        self.ws.add_image(img, f"A{self.r}")
+        self.ws.row_dimensions[self.r].height = max(90, height_px * 0.75)
+        self.r += 1
         self.space(8)
         return self

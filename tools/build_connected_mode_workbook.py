@@ -6,12 +6,14 @@ import sys
 from openpyxl import Workbook
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from cm_docstyle import DocSheet, NAVY
+from cm_docstyle import DocSheet, NAVY, TEAL
 
-VER = "v2.2"
-OUT = "/workspace/docs/4G_LTE_Mobility_Management/Connected_Mode_eRAN21.1_Feature_Sheets_v2.2.xlsx"
+VER = "v2.3"
+OUT = "/workspace/docs/4G_LTE_Mobility_Management/Connected_Mode_eRAN21.1_Feature_Sheets_v2.3.xlsx"
 DOC = "Mobility Management in Connected Mode Feature Parameter Description"
 ISSUE = "Huawei eRAN21.1 Issue 08 (2026-06-30)"
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+FIG_A1 = os.path.join(ROOT, "docs/4G_LTE_Mobility_Management/figures/fig_4_3_event_a1.png")
 
 
 def R(feat, sec):
@@ -23,6 +25,7 @@ S = {
     "toc": "00 Contents",
     "ov": "03 Overview",
     "b": "04 Basic Functions",
+    "me": "Measurement Event",
     "c": "05 Coverage HO",
     "s": "06 Service HO",
     "d": "07 Distance HO",
@@ -35,7 +38,7 @@ S = {
     "g": "14 GERAN Multi-PLMN",
 }
 
-ORDER = ["toc", "ov", "b", "c", "s", "d", "u", "q", "r", "f", "p", "m", "g"]
+ORDER = ["toc", "ov", "b", "me", "c", "s", "d", "u", "q", "r", "f", "p", "m", "g"]
 
 
 def nav_for(key):
@@ -45,6 +48,8 @@ def nav_for(key):
     items = [("Contents", S["toc"])]
     items.append((f"← {S[prev_k]}" if prev_k else "", S[prev_k] if prev_k else None))
     items.append((f"{S[next_k]} →" if next_k else "", S[next_k] if next_k else None))
+    if key == "b":
+        items.append(("Measurement Event", S["me"]))
     if key != "b":
         items.append(("Ch.4 Basic (must)", S["b"]))
     return items
@@ -67,8 +72,8 @@ def sheet_toc_fix(wb):
     d = DocSheet(ws, f"{DOC}  |  Contents")
     d.banner(f"{DOC}   ·   {ISSUE}   ·   {VER}")
     d.title("Contents", "How to read this file")
-    d.meta("Version v2.2. One sheet = one feature chapter. Every feature sheet uses boxed Common / Overview and numbered Principle. Chapter 4 is basic for every later feature.")
-    d.nav([("This page", None), (S["ov"] + " →", S["ov"]), ("Ch.4 Basic (must)", S["b"])])
+    d.meta("Version v2.3. One sheet = one feature chapter. Measurement Event is document §4.1.4.2.1 (Table 4-8 + Figure 4-3). Chapter 4 is basic for every later feature.")
+    d.nav([("This page", None), (S["ov"] + " →", S["ov"]), ("Ch.4 Basic (must)", S["b"]), ("Measurement Event", S["me"])])
     d.h1("What this file is")
     d.para(f"{DOC}. {ISSUE}.")
     d.para("The document describes several connected-mode handover features. Chapter 4 is the common engine (measurement, events A1–A5 / B1–B2, admission, retry). Every later feature re-uses Chapter 4 and only changes how the handover is started and which event / target is used.")
@@ -76,7 +81,7 @@ def sheet_toc_fix(wb):
         "One sheet per feature. Hyperlinks jump to the related feature in one click.",
         "Gridlines are off. Introduction → Common for sub-group / Overview (boxed) → Principle (numbered, boxed) → each sub-group → Combined summary → Parameter list.",
         "Chapter 5 Common for sub-group (document §5.1) is shared by 5.2–5.6. Chapters 6, 7 and 8 use the same Common-for-sub-group box style.",
-        "This file is version v2.2.",
+        "This file is version v2.3. Measurement Event is §4.1.4.2.1: Table 4-8 and the book Figure 4-3 (not a reconstructed chart).",
         "Parameter list: Value = value only (blue). Command-example dBm in the book are not design values.",
         "FDD Feature IDs from §2.3. TDD uses the TD* equivalent unless the document says FDD only.",
         "LBFD-131111 FDD↔TDD is covered inside 5.3, 6.2 and 7.2 (inter-duplex = inter-frequency).",
@@ -99,6 +104,7 @@ def sheet_toc_fix(wb):
     rows = [
         ("3", "Overview", "21", "—", S["ov"]),
         ("4", "Basic Functions (must for all later features)", "29", "LBFD-002018", S["b"]),
+        ("4.1.4.2.1", "Measurement Events — Table 4-8 and Figure 4-3", "—", "LBFD-002018 · 3GPP TS 36.331 §5.5.4", S["me"]),
         ("5", "Coverage-based Handover", "97", "LBFD-00201801 / 00201802 · LOFD-001019 / 001020 / 001078", S["c"]),
         ("6", "Service-based Handover", "189", "LBFD-00201805 · LOFD-171207 · LOFD-001043 / 001046", S["s"]),
         ("7", "Distance-based Handover", "225", "LBFD-00201804 · LOFD-001072 / 001073", S["d"]),
@@ -241,6 +247,7 @@ def sheet_basic(wb):
 
     d.h2("4.1.4  Events and offset calculation")
     d.para("Events only say signal quality. The feature chapter decides which event is used.")
+    d.jump("Open Measurement Event  →  Table 4-8 and document Figure 4-3", S["me"])
     d.callout("CALC", "Calculation  ·  entering condition must hold for TimeToTrig", [
         "A1  Ms − Hys > Thresh     serving becomes good (stops coverage measurement; can start FreqPri)",
         "A2  Ms + Hys < Thresh     serving becomes poor (starts inter-frequency / IRAT measurement)",
@@ -356,6 +363,67 @@ def sheet_basic(wb):
     ]
     for row in rows:
         d.param_row(*row)
+    return d
+
+
+def sheet_measurement(wb):
+    d = start(
+        wb, "me", "4.1.4.2.1", "Measurement Events",
+        "Document §4.1.4.2.1. Table 4-8 and Figure 4-3 from the book (the document figure, not a reconstructed chart). Feature ID LBFD-002018.",
+        tab=TEAL,
+    )
+    d.h1("Overview of Mobility Events")
+    d.para("An event is an indication of signal quality. Table 4-8 lists the definition of each event.")
+    d.h2("Table 4-8  Event definitions")
+    d.data_table(
+        ["Event Type", "Event Definition"],
+        [
+            ["Event A1", "The signal quality of the serving cell exceeds a specific threshold."],
+            ["Event A2", "The signal quality of the serving cell drops below a specific threshold."],
+            ["Event A3", "The signal quality of a neighboring cell exceeds that of the serving cell."],
+            ["Event A4", "The signal quality of a neighboring cell exceeds a specific threshold."],
+            ["Event A5", "The signal quality of the serving cell drops below threshold 1 (Thresh1) and the signal quality of a neighboring cell exceeds threshold 2 (Thresh2)."],
+            ["Event B1", "The signal quality of an inter-RAT neighboring cell exceeds a specific threshold."],
+            ["Event B2", "The signal quality of the serving cell drops below threshold 1 (Thresh1) and the signal quality of an inter-RAT neighboring cell exceeds threshold 2 (Thresh2)."],
+        ],
+        [(1, 2), (3, 9)],
+    )
+    d.para('The entering and leaving conditions of these events are described as follows. For details, see section 5.5.4 "Measurement report triggering" in 3GPP TS 36.331 V10.1.0.')
+    d.h2("Event A1")
+    d.callout("CONDITION", "Entering and leaving conditions  ·  3GPP TS 36.331 V10.1.0 §5.5.4", [
+        "Entering condition: (Ms − Hys > Thresh) is true throughout a duration specified by TimeToTrig.",
+        "Leaving condition: (Ms + Hys < Thresh) is true throughout a duration specified by TimeToTrig.",
+        "Figure 4-3 shows the details.",
+    ])
+    d.callout("CONDITION", "Variables used in Figure 4-3", [
+        "Ms — the measurement result of the serving cell, not taking into account any offsets.",
+        "Hys — hysteresis parameter for this event.",
+        "Thresh — threshold parameter for this event.",
+        "TimeToTrig — time-to-trigger duration.",
+    ])
+    d.h2("Figure 4-3  Entering and leaving of event A1")
+    d.para("Document figure from Mobility Management in Connected Mode Feature Parameter Description, eRAN21.1 Issue 08, §4.1.4.2.1. This is the book chart, not a reconstructed drawing.")
+    d.embed_figure(FIG_A1)
+    d.h1("Combined summary")
+    d.info_box("Combined summary", [
+        "An event is an indication of signal quality. Table 4-8 is the definition of each event (A1–A5, B1, B2).",
+        "Event A1 entering: Ms − Hys > Thresh for TimeToTrig. Leaving: Ms + Hys < Thresh for TimeToTrig.",
+        "Figure 4-3 is the document chart for Event A1 entering and leaving.",
+        "Which event a feature uses, and the live dBm, stay on Chapter 4 and the feature sheet. This sheet does not set a design value.",
+    ])
+    d.h1("Parameter list")
+    d.para("Hysteresis, threshold and TimeToTrig for these events are configured in Chapter 4. Open 04 Basic Functions.")
+    d.param_heads()
+    rows = [
+        (1, "INTERFREQHOGROUP", "InterFreqHoA1A2Hyst", "—", "Hys in A1/A2. Live value is on Chapter 4.", "Tune", "§4.1.4.2.1",
+         "Hysteresis Hys applied to entering and leaving conditions of events A1 and A2.", R("LBFD-002018", "§4.1.4.2.1 / Table 4-8")),
+        (2, "INTERFREQHOGROUP", "InterFreqHoA1A2TimeToTrig", "—", "TimeToTrig for A1/A2. Must hold for the whole duration.", "Tune", "§4.1.4.2.1",
+         "Duration TimeToTrig that A1/A2 entering or leaving condition must hold.", R("LBFD-002018", "§4.1.4.2.1 / Table 4-8")),
+        (3, "—", "—", "—", "A3 / A4 / A5 / B1 / B2 Hys, TTT and thresholds: Chapter 4 parameter list.", "—", "→ Ch.4",
+         "This sheet is Table 4-8 and Figure 4-3. Remaining event parameters stay on 04 Basic Functions.", R("LBFD-002018", "§4.1.4")),
+    ]
+    for i, row in enumerate(rows):
+        d.param_row(*row, link_sheet=S["b"] if i == 2 else None)
     return d
 
 
@@ -1329,6 +1397,7 @@ def main():
     sheet_toc_fix(wb)
     sheet_overview(wb)
     sheet_basic(wb)
+    sheet_measurement(wb)
     sheet_coverage(wb)
     sheet_service(wb)
     sheet_distance(wb)

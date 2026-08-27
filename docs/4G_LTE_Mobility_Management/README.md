@@ -4,13 +4,13 @@ One Word-like Excel file. One sheet per feature chapter of *Mobility Management 
 
 ## File
 
-Current version: **v2.2**
+Current version: **v2.3**
 
-[Connected_Mode_eRAN21.1_Feature_Sheets_v2.2.xlsx](./Connected_Mode_eRAN21.1_Feature_Sheets_v2.2.xlsx)
+[Connected_Mode_eRAN21.1_Feature_Sheets_v2.3.xlsx](./Connected_Mode_eRAN21.1_Feature_Sheets_v2.3.xlsx)
 
 ## How to read
 
-Open **00 Contents**, then **04 Basic Functions**, then features 5–14.
+Open **00 Contents**, then **04 Basic Functions**, then **Measurement Event** (document Table 4-8 and Figure 4-3), then features 5–14.
 
 Every feature sheet now uses the same box style:
 
