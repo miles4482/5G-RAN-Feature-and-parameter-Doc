@@ -461,3 +461,20 @@ class DocSheet:
         self.r += 1
         self.space(8)
         return self
+
+    def chip_row(self, items):
+        """One-row jump chips. items: list of (label, location_or_None). Returns the row number."""
+        ws, r = self.ws, self.r
+        ws.row_dimensions[r].height = 22
+        used = min(len(items), COLS)
+        for i, (label, loc) in enumerate(items[:used]):
+            cell = ws.cell(r, i + 1, label)
+            cell.alignment = C
+            cell.border = no_b
+            if loc:
+                cell.hyperlink = Hyperlink(ref=cell.coordinate, location=loc, display=label)
+                cell.font = ft(10, True, LINK, underline="single")
+            else:
+                cell.font = ft(10, True, NAVY)
+        self.r += 1
+        return r

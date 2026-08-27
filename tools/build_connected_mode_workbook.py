@@ -6,14 +6,23 @@ import sys
 from openpyxl import Workbook
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from cm_docstyle import DocSheet, NAVY, TEAL
+from cm_docstyle import DocSheet, NAVY, TEAL, LINK, ft, C
 
-VER = "v2.3"
-OUT = "/workspace/docs/4G_LTE_Mobility_Management/Connected_Mode_eRAN21.1_Feature_Sheets_v2.3.xlsx"
+VER = "v2.4"
+OUT = "/workspace/docs/4G_LTE_Mobility_Management/Connected_Mode_eRAN21.1_Feature_Sheets_v2.4.xlsx"
 DOC = "Mobility Management in Connected Mode Feature Parameter Description"
 ISSUE = "Huawei eRAN21.1 Issue 08 (2026-06-30)"
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-FIG_A1 = os.path.join(ROOT, "docs/4G_LTE_Mobility_Management/figures/fig_4_3_event_a1.png")
+FIG_DIR = os.path.join(ROOT, "docs/4G_LTE_Mobility_Management/figures")
+FIG = {
+    "A1": os.path.join(FIG_DIR, "fig_4_3_event_a1.png"),
+    "A2": os.path.join(FIG_DIR, "fig_4_4_event_a2.png"),
+    "A3": os.path.join(FIG_DIR, "fig_4_5_event_a3.png"),
+    "A4": os.path.join(FIG_DIR, "fig_4_6_event_a4.png"),
+    "A5": os.path.join(FIG_DIR, "fig_4_7_event_a5.png"),
+    "B1": os.path.join(FIG_DIR, "fig_4_8_event_b1.png"),
+    "B2": os.path.join(FIG_DIR, "fig_4_9_event_b2.png"),
+}
 
 
 def R(feat, sec):
@@ -72,7 +81,7 @@ def sheet_toc_fix(wb):
     d = DocSheet(ws, f"{DOC}  |  Contents")
     d.banner(f"{DOC}   ·   {ISSUE}   ·   {VER}")
     d.title("Contents", "How to read this file")
-    d.meta("Version v2.3. One sheet = one feature chapter. Measurement Event is document §4.1.4.2.1 (Table 4-8 + Figure 4-3). Chapter 4 is basic for every later feature.")
+    d.meta("Version v2.4. One sheet = one feature chapter. Measurement Event is document §4.1.4.2.1 (Table 4-8 + entering/leaving charts for A1–A5 and B1–B2). Chapter 4 is basic for every later feature.")
     d.nav([("This page", None), (S["ov"] + " →", S["ov"]), ("Ch.4 Basic (must)", S["b"]), ("Measurement Event", S["me"])])
     d.h1("What this file is")
     d.para(f"{DOC}. {ISSUE}.")
@@ -81,7 +90,7 @@ def sheet_toc_fix(wb):
         "One sheet per feature. Hyperlinks jump to the related feature in one click.",
         "Gridlines are off. Introduction → Common for sub-group / Overview (boxed) → Principle (numbered, boxed) → each sub-group → Combined summary → Parameter list.",
         "Chapter 5 Common for sub-group (document §5.1) is shared by 5.2–5.6. Chapters 6, 7 and 8 use the same Common-for-sub-group box style.",
-        "This file is version v2.3. Measurement Event is §4.1.4.2.1: Table 4-8 and the book Figure 4-3 (not a reconstructed chart).",
+        "This file is version v2.4. Measurement Event is §4.1.4.2.1: Table 4-8 and entering/leaving charts for Events A1–A5 and B1–B2.",
         "Parameter list: Value = value only (blue). Command-example dBm in the book are not design values.",
         "FDD Feature IDs from §2.3. TDD uses the TD* equivalent unless the document says FDD only.",
         "LBFD-131111 FDD↔TDD is covered inside 5.3, 6.2 and 7.2 (inter-duplex = inter-frequency).",
@@ -104,7 +113,7 @@ def sheet_toc_fix(wb):
     rows = [
         ("3", "Overview", "21", "—", S["ov"]),
         ("4", "Basic Functions (must for all later features)", "29", "LBFD-002018", S["b"]),
-        ("4.1.4.2.1", "Measurement Events — Table 4-8 and Figure 4-3", "—", "LBFD-002018 · 3GPP TS 36.331 §5.5.4", S["me"]),
+        ("4.1.4.2.1", "Measurement Events — Table 4-8 and Figures 4-3 to 4-9 (A1–A5, B1, B2)", "—", "LBFD-002018 · 3GPP TS 36.331 §5.5.4", S["me"]),
         ("5", "Coverage-based Handover", "97", "LBFD-00201801 / 00201802 · LOFD-001019 / 001020 / 001078", S["c"]),
         ("6", "Service-based Handover", "189", "LBFD-00201805 · LOFD-171207 · LOFD-001043 / 001046", S["s"]),
         ("7", "Distance-based Handover", "225", "LBFD-00201804 · LOFD-001072 / 001073", S["d"]),
@@ -247,7 +256,7 @@ def sheet_basic(wb):
 
     d.h2("4.1.4  Events and offset calculation")
     d.para("Events only say signal quality. The feature chapter decides which event is used.")
-    d.jump("Open Measurement Event  →  Table 4-8 and document Figure 4-3", S["me"])
+    d.jump("Open Measurement Event  →  Table 4-8 and entering/leaving charts for A1–A5, B1, B2", S["me"])
     d.callout("CALC", "Calculation  ·  entering condition must hold for TimeToTrig", [
         "A1  Ms − Hys > Thresh     serving becomes good (stops coverage measurement; can start FreqPri)",
         "A2  Ms + Hys < Thresh     serving becomes poor (starts inter-frequency / IRAT measurement)",
@@ -367,9 +376,11 @@ def sheet_basic(wb):
 
 
 def sheet_measurement(wb):
+    from openpyxl.worksheet.hyperlink import Hyperlink
+
     d = start(
         wb, "me", "4.1.4.2.1", "Measurement Events",
-        "Document §4.1.4.2.1. Table 4-8 and Figure 4-3 from the book (the document figure, not a reconstructed chart). Feature ID LBFD-002018.",
+        "Document §4.1.4.2.1. Table 4-8 plus entering and leaving conditions and charts for Events A1–A5 and B1–B2. Feature ID LBFD-002018.",
         tab=TEAL,
     )
     d.h1("Overview of Mobility Events")
@@ -389,41 +400,203 @@ def sheet_measurement(wb):
         [(1, 2), (3, 9)],
     )
     d.para('The entering and leaving conditions of these events are described as follows. For details, see section 5.5.4 "Measurement report triggering" in 3GPP TS 36.331 V10.1.0.')
-    d.h2("Event A1")
-    d.callout("CONDITION", "Entering and leaving conditions  ·  3GPP TS 36.331 V10.1.0 §5.5.4", [
-        "Entering condition: (Ms − Hys > Thresh) is true throughout a duration specified by TimeToTrig.",
-        "Leaving condition: (Ms + Hys < Thresh) is true throughout a duration specified by TimeToTrig.",
-        "Figure 4-3 shows the details.",
-    ])
-    d.callout("CONDITION", "Variables used in Figure 4-3", [
-        "Ms — the measurement result of the serving cell, not taking into account any offsets.",
-        "Hys — hysteresis parameter for this event.",
-        "Thresh — threshold parameter for this event.",
-        "TimeToTrig — time-to-trigger duration.",
-    ])
-    d.h2("Figure 4-3  Entering and leaving of event A1")
-    d.para("Document figure from Mobility Management in Connected Mode Feature Parameter Description, eRAN21.1 Issue 08, §4.1.4.2.1. This is the book chart, not a reconstructed drawing.")
-    d.embed_figure(FIG_A1)
+    d.h2("Entering and leaving  ·  all events")
+    d.data_table(
+        ["Event Type", "Entering condition (true throughout TimeToTrig)", "Leaving condition (true throughout TimeToTrig)"],
+        [
+            ["Event A1", "Ms − Hys > Thresh", "Ms + Hys < Thresh"],
+            ["Event A2", "Ms + Hys < Thresh", "Ms − Hys > Thresh"],
+            ["Event A3", "Mn + Ofn + Ocn − Hys > Ms + Ofs + Ocs + Off", "Mn + Ofn + Ocn + Hys < Ms + Ofs + Ocs + Off"],
+            ["Event A4", "Mn + Ofn + Ocn − Hys > Thresh", "Mn + Ofn + Ocn + Hys < Thresh"],
+            ["Event A5", "Ms + Hys < Thresh1  AND  Mn + Ofn + Ocn − Hys > Thresh2", "Ms − Hys > Thresh1  OR  Mn + Ofn + Ocn + Hys < Thresh2"],
+            ["Event B1", "Mn + Ofn − Hys > Thresh", "Mn + Ofn + Hys < Thresh"],
+            ["Event B2", "Ms + Hys < Thresh1  AND  Mn + Ofn − Hys > Thresh2", "Ms − Hys > Thresh1  OR  Mn + Ofn + Hys < Thresh2"],
+        ],
+        [(1, 2), (3, 6), (7, 9)],
+    )
+    d.para("Jump to an event chart:")
+    jump_names = ["A1", "A2", "A3", "A4", "A5", "B1", "B2"]
+    chip_row = d.r
+    d.chip_row([(f"Event {n}", None) for n in jump_names])
+
+    events = [
+        {
+            "name": "A1",
+            "fig": "4-3",
+            "conds": [
+                "Entering condition: (Ms − Hys > Thresh) is true throughout a duration specified by TimeToTrig.",
+                "Leaving condition: (Ms + Hys < Thresh) is true throughout a duration specified by TimeToTrig.",
+                "Figure 4-3 shows the details.",
+            ],
+            "vars": [
+                "Ms — the measurement result of the serving cell, not taking into account any offsets.",
+                "Hys — hysteresis parameter for this event.",
+                "Thresh — threshold parameter for this event.",
+                "TimeToTrig — time-to-trigger duration.",
+            ],
+            "note": "Document figure from Mobility Management in Connected Mode Feature Parameter Description, eRAN21.1 Issue 08, §4.1.4.2.1.",
+        },
+        {
+            "name": "A2",
+            "fig": "4-4",
+            "conds": [
+                "Entering condition: (Ms + Hys < Thresh) is true throughout a duration specified by TimeToTrig.",
+                "Leaving condition: (Ms − Hys > Thresh) is true throughout a duration specified by TimeToTrig.",
+                "Figure 4-4 shows the details.",
+            ],
+            "vars": [
+                "Ms — the measurement result of the serving cell, not taking into account any offsets.",
+                "Hys — hysteresis parameter for this event.",
+                "Thresh — threshold parameter for this event.",
+                "TimeToTrig — time-to-trigger duration.",
+            ],
+            "note": "Entering and leaving of event A2. Same document schematic as Figure 4-3 (RSRP/RSRQ vs Time, Thresh, Hys, TimeToTrig).",
+        },
+        {
+            "name": "A3",
+            "fig": "4-5",
+            "conds": [
+                "Entering condition: (Mn + Ofn + Ocn − Hys > Ms + Ofs + Ocs + Off) is true throughout a duration specified by TimeToTrig.",
+                "Leaving condition: (Mn + Ofn + Ocn + Hys < Ms + Ofs + Ocs + Off) is true throughout a duration specified by TimeToTrig.",
+                "Figure 4-5 shows the details.",
+            ],
+            "vars": [
+                "Mn — measurement result of the neighbouring cell, not taking into account any offsets.",
+                "Ofn — frequency specific offset of the neighbouring cell frequency.",
+                "Ocn — cell specific offset (CIO) of the neighbouring cell. Zero if not configured.",
+                "Ms — measurement result of the serving cell, not taking into account any offsets.",
+                "Ofs — frequency specific offset of the serving frequency.",
+                "Ocs — cell specific offset of the serving cell. Zero if not configured.",
+                "Hys — hysteresis parameter for this event.",
+                "Off — offset parameter for this event (a3-Offset).",
+                "TimeToTrig — time-to-trigger duration.",
+            ],
+            "note": "Entering and leaving of event A3. Neighbour vs serving plus offset. Same document schematic as Figure 4-3.",
+        },
+        {
+            "name": "A4",
+            "fig": "4-6",
+            "conds": [
+                "Entering condition: (Mn + Ofn + Ocn − Hys > Thresh) is true throughout a duration specified by TimeToTrig.",
+                "Leaving condition: (Mn + Ofn + Ocn + Hys < Thresh) is true throughout a duration specified by TimeToTrig.",
+                "Figure 4-6 shows the details.",
+            ],
+            "vars": [
+                "Mn — measurement result of the neighbouring cell, not taking into account any offsets.",
+                "Ofn — frequency specific offset of the neighbouring cell frequency.",
+                "Ocn — cell specific offset (CIO) of the neighbouring cell. Zero if not configured.",
+                "Hys — hysteresis parameter for this event.",
+                "Thresh — threshold parameter for this event.",
+                "TimeToTrig — time-to-trigger duration.",
+            ],
+            "note": "Entering and leaving of event A4. Neighbour vs an absolute threshold. Same document schematic as Figure 4-3.",
+        },
+        {
+            "name": "A5",
+            "fig": "4-7",
+            "conds": [
+                "Entering condition: (Ms + Hys < Thresh1) AND (Mn + Ofn + Ocn − Hys > Thresh2) are both true throughout a duration specified by TimeToTrig.",
+                "Leaving condition: (Ms − Hys > Thresh1) OR (Mn + Ofn + Ocn + Hys < Thresh2) is true throughout a duration specified by TimeToTrig.",
+                "Figure 4-7 shows the details.",
+            ],
+            "vars": [
+                "Ms — measurement result of the serving cell, not taking into account any offsets.",
+                "Mn — measurement result of the neighbouring cell, not taking into account any offsets.",
+                "Ofn — frequency specific offset of the neighbouring cell frequency.",
+                "Ocn — cell specific offset (CIO) of the neighbouring cell. Zero if not configured.",
+                "Hys — hysteresis parameter for this event.",
+                "Thresh1 — serving-cell threshold for this event.",
+                "Thresh2 — neighbouring-cell threshold for this event.",
+                "TimeToTrig — time-to-trigger duration.",
+            ],
+            "note": "Entering and leaving of event A5. Serving vs Thresh1 and neighbour vs Thresh2. Same document schematic as Figure 4-3.",
+        },
+        {
+            "name": "B1",
+            "fig": "4-8",
+            "conds": [
+                "Entering condition: (Mn + Ofn − Hys > Thresh) is true throughout a duration specified by TimeToTrig.",
+                "Leaving condition: (Mn + Ofn + Hys < Thresh) is true throughout a duration specified by TimeToTrig.",
+                "Figure 4-8 shows the details. Inter-RAT neighbouring cell.",
+            ],
+            "vars": [
+                "Mn — measurement result of the inter-RAT neighbouring cell, not taking into account any offsets.",
+                "Ofn — frequency specific offset of the inter-RAT neighbouring frequency.",
+                "Hys — hysteresis parameter for this event.",
+                "Thresh — threshold parameter for this event.",
+                "TimeToTrig — time-to-trigger duration.",
+            ],
+            "note": "Entering and leaving of event B1. Inter-RAT neighbour vs an absolute threshold. Same document schematic as Figure 4-3.",
+        },
+        {
+            "name": "B2",
+            "fig": "4-9",
+            "conds": [
+                "Entering condition: (Ms + Hys < Thresh1) AND (Mn + Ofn − Hys > Thresh2) are both true throughout a duration specified by TimeToTrig.",
+                "Leaving condition: (Ms − Hys > Thresh1) OR (Mn + Ofn + Hys < Thresh2) is true throughout a duration specified by TimeToTrig.",
+                "Figure 4-9 shows the details. Inter-RAT neighbouring cell.",
+            ],
+            "vars": [
+                "Ms — measurement result of the serving cell, not taking into account any offsets.",
+                "Mn — measurement result of the inter-RAT neighbouring cell, not taking into account any offsets.",
+                "Ofn — frequency specific offset of the inter-RAT neighbouring frequency.",
+                "Hys — hysteresis parameter for this event.",
+                "Thresh1 — serving-cell threshold for this event.",
+                "Thresh2 — inter-RAT neighbouring-cell threshold for this event.",
+                "TimeToTrig — time-to-trigger duration.",
+            ],
+            "note": "Entering and leaving of event B2. Serving vs Thresh1 and inter-RAT neighbour vs Thresh2. Same document schematic as Figure 4-3.",
+        },
+    ]
+
+    anchors = {}
+    for ev in events:
+        anchors[ev["name"]] = d.r
+        d.h1(f"Event {ev['name']}")
+        d.callout("CONDITION", f"Entering and leaving conditions  ·  3GPP TS 36.331 V10.1.0 §5.5.4  ·  Event {ev['name']}", ev["conds"])
+        d.callout("CONDITION", f"Variables used in Figure {ev['fig']}", ev["vars"])
+        d.h2(f"Figure {ev['fig']}  Entering and leaving of event {ev['name']}")
+        d.para(ev["note"])
+        d.embed_figure(FIG[ev["name"]], width_px=1100)
+
+    for i, name in enumerate(jump_names):
+        cell = d.ws.cell(chip_row, i + 1)
+        label = f"Event {name}"
+        loc = f"'{S['me']}'!A{anchors[name]}"
+        cell.value = label
+        cell.hyperlink = Hyperlink(ref=cell.coordinate, location=loc, display=label)
+        cell.font = ft(10, True, LINK, underline="single")
+        cell.alignment = C
+
     d.h1("Combined summary")
     d.info_box("Combined summary", [
         "An event is an indication of signal quality. Table 4-8 is the definition of each event (A1–A5, B1, B2).",
-        "Event A1 entering: Ms − Hys > Thresh for TimeToTrig. Leaving: Ms + Hys < Thresh for TimeToTrig.",
-        "Figure 4-3 is the document chart for Event A1 entering and leaving.",
+        "Every event uses hysteresis and TimeToTrig. The entering or leaving inequality must stay true for the whole TimeToTrig.",
+        "A1 serving good / A2 serving poor. A3 neighbour relatively better. A4 neighbour absolutely good. A5 serving poor AND neighbour good.",
+        "B1 / B2 are the inter-RAT pair of A4 / A5.",
         "Which event a feature uses, and the live dBm, stay on Chapter 4 and the feature sheet. This sheet does not set a design value.",
     ])
     d.h1("Parameter list")
-    d.para("Hysteresis, threshold and TimeToTrig for these events are configured in Chapter 4. Open 04 Basic Functions.")
+    d.para("Hysteresis, threshold, offset and TimeToTrig for these events are configured in Chapter 4. Open 04 Basic Functions.")
     d.param_heads()
     rows = [
-        (1, "INTERFREQHOGROUP", "InterFreqHoA1A2Hyst", "—", "Hys in A1/A2. Live value is on Chapter 4.", "Tune", "§4.1.4.2.1",
-         "Hysteresis Hys applied to entering and leaving conditions of events A1 and A2.", R("LBFD-002018", "§4.1.4.2.1 / Table 4-8")),
-        (2, "INTERFREQHOGROUP", "InterFreqHoA1A2TimeToTrig", "—", "TimeToTrig for A1/A2. Must hold for the whole duration.", "Tune", "§4.1.4.2.1",
-         "Duration TimeToTrig that A1/A2 entering or leaving condition must hold.", R("LBFD-002018", "§4.1.4.2.1 / Table 4-8")),
-        (3, "—", "—", "—", "A3 / A4 / A5 / B1 / B2 Hys, TTT and thresholds: Chapter 4 parameter list.", "—", "→ Ch.4",
-         "This sheet is Table 4-8 and Figure 4-3. Remaining event parameters stay on 04 Basic Functions.", R("LBFD-002018", "§4.1.4")),
+        (1, "INTERFREQHOGROUP", "InterFreqHoA1A2Hyst", "—", "Hys in A1/A2. Live value is on Chapter 4.", "Tune", "Event A1 / A2",
+         "Hysteresis Hys applied to entering and leaving conditions of events A1 and A2.", R("LBFD-002018", "§4.1.4.2.1")),
+        (2, "INTERFREQHOGROUP", "InterFreqHoA1A2TimeToTrig", "—", "TimeToTrig for A1/A2. Must hold for the whole duration.", "Tune", "Event A1 / A2",
+         "Duration TimeToTrig that A1/A2 entering or leaving condition must hold.", R("LBFD-002018", "§4.1.4.2.1")),
+        (3, "INTRAFREQHOGROUP", "IntraFreqHoA3Offset", "—", "Off in intra-frequency A3. Live value is on Chapter 4.", "Tune", "Event A3",
+         "Offset Off added on the serving side of intra-frequency event A3.", R("LBFD-002018", "§4.1.4.2.1")),
+        (4, "INTERFREQHOGROUP", "InterFreqHoA3Offset", "—", "Off in inter-frequency A3. Live value is on Chapter 4.", "Tune", "Event A3",
+         "Offset Off added on the serving side of inter-frequency event A3.", R("LBFD-002018", "§4.1.4.2.1")),
+        (5, "INTERFREQHOGROUP", "InterFreqHoA4Hyst", "—", "Hys in A4: Mn+Ofn+Ocn−Hys > Thresh.", "Tune", "Event A4",
+         "Hysteresis Hys in the event A4 formula.", R("LBFD-002018", "§4.1.4.2.1")),
+        (6, "INTERFREQHOGROUP", "InterFreqHoA4TimeToTrig", "not 5120 ms", "5120 ms disables FreqPri, CQI and service-based IFHO (eRAN21.1 Table 4-9).", "Yes", "Event A4",
+         "Duration TimeToTrig for event A4. 5120 ms is treated as disable for FreqPri / CQI / service IFHO.", R("LBFD-002018", "Table 4-9")),
+        (7, "—", "—", "—", "A5 / B1 / B2 Hys, TTT and thresholds: Chapter 4 parameter list.", "—", "→ Ch.4",
+         "This sheet is Table 4-8 and the entering/leaving charts. Remaining event parameters stay on 04 Basic Functions.", R("LBFD-002018", "§4.1.4")),
     ]
     for i, row in enumerate(rows):
-        d.param_row(*row, link_sheet=S["b"] if i == 2 else None)
+        d.param_row(*row, link_sheet=S["b"] if i == 6 else None)
     return d
 
 
