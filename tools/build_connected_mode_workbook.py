@@ -8,8 +8,8 @@ from openpyxl import Workbook
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from cm_docstyle import DocSheet, NAVY, TEAL, LINK, ft, C
 
-VER = "v2.4"
-OUT = "/workspace/docs/4G_LTE_Mobility_Management/Connected_Mode_eRAN21.1_Feature_Sheets_v2.4.xlsx"
+VER = "v2.5"
+OUT = "/workspace/docs/4G_LTE_Mobility_Management/Connected_Mode_eRAN21.1_Feature_Sheets_v2.5.xlsx"
 DOC = "Mobility Management in Connected Mode Feature Parameter Description"
 ISSUE = "Huawei eRAN21.1 Issue 08 (2026-06-30)"
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -81,7 +81,7 @@ def sheet_toc_fix(wb):
     d = DocSheet(ws, f"{DOC}  |  Contents")
     d.banner(f"{DOC}   ·   {ISSUE}   ·   {VER}")
     d.title("Contents", "How to read this file")
-    d.meta("Version v2.4. One sheet = one feature chapter. Measurement Event is document §4.1.4.2.1 (Table 4-8 + entering/leaving charts for A1–A5 and B1–B2). Chapter 4 is basic for every later feature.")
+    d.meta("Version v2.5. One sheet = one feature chapter. Measurement Event is document §4.1.4.2.1 (Table 4-8, charts, and worked formula examples for A1–A5 and B1–B2). Chapter 4 is basic for every later feature.")
     d.nav([("This page", None), (S["ov"] + " →", S["ov"]), ("Ch.4 Basic (must)", S["b"]), ("Measurement Event", S["me"])])
     d.h1("What this file is")
     d.para(f"{DOC}. {ISSUE}.")
@@ -90,7 +90,7 @@ def sheet_toc_fix(wb):
         "One sheet per feature. Hyperlinks jump to the related feature in one click.",
         "Gridlines are off. Introduction → Common for sub-group / Overview (boxed) → Principle (numbered, boxed) → each sub-group → Combined summary → Parameter list.",
         "Chapter 5 Common for sub-group (document §5.1) is shared by 5.2–5.6. Chapters 6, 7 and 8 use the same Common-for-sub-group box style.",
-        "This file is version v2.4. Measurement Event is §4.1.4.2.1: Table 4-8 and entering/leaving charts for Events A1–A5 and B1–B2.",
+        "This file is version v2.5. Measurement Event is §4.1.4.2.1: Table 4-8, entering/leaving charts, and a worked calculation for every event.",
         "Parameter list: Value = value only (blue). Command-example dBm in the book are not design values.",
         "FDD Feature IDs from §2.3. TDD uses the TD* equivalent unless the document says FDD only.",
         "LBFD-131111 FDD↔TDD is covered inside 5.3, 6.2 and 7.2 (inter-duplex = inter-frequency).",
@@ -113,7 +113,7 @@ def sheet_toc_fix(wb):
     rows = [
         ("3", "Overview", "21", "—", S["ov"]),
         ("4", "Basic Functions (must for all later features)", "29", "LBFD-002018", S["b"]),
-        ("4.1.4.2.1", "Measurement Events — Table 4-8 and Figures 4-3 to 4-9 (A1–A5, B1, B2)", "—", "LBFD-002018 · 3GPP TS 36.331 §5.5.4", S["me"]),
+        ("4.1.4.2.1", "Measurement Events — Table 4-8, charts and worked formula examples (A1–A5, B1, B2)", "—", "LBFD-002018 · 3GPP TS 36.331 §5.5.4", S["me"]),
         ("5", "Coverage-based Handover", "97", "LBFD-00201801 / 00201802 · LOFD-001019 / 001020 / 001078", S["c"]),
         ("6", "Service-based Handover", "189", "LBFD-00201805 · LOFD-171207 · LOFD-001043 / 001046", S["s"]),
         ("7", "Distance-based Handover", "225", "LBFD-00201804 · LOFD-001072 / 001073", S["d"]),
@@ -256,7 +256,7 @@ def sheet_basic(wb):
 
     d.h2("4.1.4  Events and offset calculation")
     d.para("Events only say signal quality. The feature chapter decides which event is used.")
-    d.jump("Open Measurement Event  →  Table 4-8 and entering/leaving charts for A1–A5, B1, B2", S["me"])
+    d.jump("Open Measurement Event  →  Table 4-8, charts and worked formula examples for A1–A5, B1, B2", S["me"])
     d.callout("CALC", "Calculation  ·  entering condition must hold for TimeToTrig", [
         "A1  Ms − Hys > Thresh     serving becomes good (stops coverage measurement; can start FreqPri)",
         "A2  Ms + Hys < Thresh     serving becomes poor (starts inter-frequency / IRAT measurement)",
@@ -380,7 +380,7 @@ def sheet_measurement(wb):
 
     d = start(
         wb, "me", "4.1.4.2.1", "Measurement Events",
-        "Document §4.1.4.2.1. Table 4-8 plus entering and leaving conditions and charts for Events A1–A5 and B1–B2. Feature ID LBFD-002018.",
+        "Document §4.1.4.2.1. Table 4-8, entering/leaving charts, and a worked formula example for Events A1–A5 and B1–B2. Feature ID LBFD-002018.",
         tab=TEAL,
     )
     d.h1("Overview of Mobility Events")
@@ -414,7 +414,13 @@ def sheet_measurement(wb):
         ],
         [(1, 2), (3, 6), (7, 9)],
     )
-    d.para("Jump to an event chart:")
+    d.callout("CALC", "Teaching set used in every example below  ·  for understanding only  ·  not a live design", [
+        "Ms = −95 dBm (serving RSRP). Mn = −90 dBm (E-UTRAN neighbour). For B1/B2 the IRAT neighbour starts at Mn = −92 (same idea as Chapter 4).",
+        "Hys = 2 dB. Ofn = Ofs = 0. Ocn = Ocs = 0. A3 Off = 2 dB. TimeToTrig = 320 ms.",
+        "Calibrate real cells from MR. Do not copy these dBm into the Value column. The book MML −85 / −87 / −103 dBm are command examples, not this teaching set.",
+        "TimeToTrig: the inequality must stay true for 320 ms. If it is true for 200 ms and then fails, the timer resets and no report is sent.",
+    ])
+    d.para("Jump to an event:")
     jump_names = ["A1", "A2", "A3", "A4", "A5", "B1", "B2"]
     chip_row = d.r
     d.chip_row([(f"Event {n}", None) for n in jump_names])
@@ -435,6 +441,15 @@ def sheet_measurement(wb):
                 "TimeToTrig — time-to-trigger duration.",
             ],
             "note": "Document figure from Mobility Management in Connected Mode Feature Parameter Description, eRAN21.1 Issue 08, §4.1.4.2.1.",
+            "calc": [
+                "Formula. Enter: Ms − Hys > Thresh.  Leave: Ms + Hys < Thresh.  Must hold for TimeToTrig = 320 ms.",
+                "Teaching values. Ms = −95 dBm. Hys = 2 dB. Thresh = −100 dBm.",
+                "Enter.  Ms − Hys = −95 − 2 = −97 dBm.  −97 > −100 → YES.  If this stays true for 320 ms → Event A1 is reported. Serving is good.",
+                "No enter.  If Ms = −105 dBm: −105 − 2 = −107 dBm.  −107 > −100 → NO. A1 does not start. Coverage measurement can continue.",
+                "Leave.  At Ms = −95: Ms + Hys = −95 + 2 = −93 dBm.  −93 < −100 → NO. A1 reporting stays on.",
+                "Leave.  If Ms falls to −105: −105 + 2 = −103 dBm.  −103 < −100 → YES. After 320 ms, A1 reporting stops.",
+                "TimeToTrig. If Ms − Hys > Thresh for only 200 ms and then Ms drops, the timer resets and no A1 report is sent.",
+            ],
         },
         {
             "name": "A2",
@@ -451,6 +466,15 @@ def sheet_measurement(wb):
                 "TimeToTrig — time-to-trigger duration.",
             ],
             "note": "Entering and leaving of event A2. Same document schematic as Figure 4-3 (RSRP/RSRQ vs Time, Thresh, Hys, TimeToTrig).",
+            "calc": [
+                "Formula. Enter: Ms + Hys < Thresh.  Leave: Ms − Hys > Thresh.  Must hold for TimeToTrig = 320 ms.",
+                "Teaching values. Ms = −95 dBm. Hys = 2 dB. Thresh = −100 dBm.",
+                "No enter.  Ms + Hys = −95 + 2 = −93 dBm.  −93 < −100 → NO. Serving is not poor. Inter-frequency / IRAT measurement does not start.",
+                "Enter.  If Ms = −105 dBm: −105 + 2 = −103 dBm.  −103 < −100 → YES. After 320 ms → Event A2 is reported. Start inter-frequency / IRAT measurement.",
+                "Leave.  At Ms = −105: Ms − Hys = −105 − 2 = −107 dBm.  −107 > −100 → NO. A2 reporting stays on.",
+                "Leave.  If Ms recovers to −95: −95 − 2 = −97 dBm.  −97 > −100 → YES. After 320 ms, A2 reporting stops.",
+                "TimeToTrig. If Ms + Hys < Thresh for only 200 ms and then Ms recovers, the timer resets and no A2 report is sent.",
+            ],
         },
         {
             "name": "A3",
@@ -472,6 +496,16 @@ def sheet_measurement(wb):
                 "TimeToTrig — time-to-trigger duration.",
             ],
             "note": "Entering and leaving of event A3. Neighbour vs serving plus offset. Same document schematic as Figure 4-3.",
+            "calc": [
+                "Formula. Enter: Mn + Ofn + Ocn − Hys > Ms + Ofs + Ocs + Off.  Leave: Mn + Ofn + Ocn + Hys < Ms + Ofs + Ocs + Off.",
+                "Teaching values. Ms = −95 dBm. Mn = −90 dBm. Hys = 2 dB. Ofn = Ofs = 0. Ocn = Ocs = 0. Off = 2 dB.",
+                "Enter.  Left = Mn + Ofn + Ocn − Hys = −90 + 0 + 0 − 2 = −92 dBm.",
+                "Enter.  Right = Ms + Ofs + Ocs + Off = −95 + 0 + 0 + 2 = −93 dBm.  −92 > −93 → YES. Neighbour is relatively better. After 320 ms → A3.",
+                "No enter.  If Off = 6 dB: Right = −95 + 6 = −89 dBm.  −92 > −89 → NO. A larger A3 offset makes intra-frequency HO harder.",
+                "CIO.  If Ocn = +3 dB: Left = −90 + 3 − 2 = −89 dBm.  −89 > −93 → still YES. The neighbour looks 3 dB better.",
+                "Leave.  At these values: Left leave = Mn + Hys = −90 + 2 = −88 dBm.  −88 < −93 → NO. A3 reporting stays on.",
+                "Leave.  If Mn falls to −100 dBm: −100 + 2 = −98 dBm.  −98 < −93 → YES. After 320 ms, A3 reporting stops.",
+            ],
         },
         {
             "name": "A4",
@@ -490,6 +524,15 @@ def sheet_measurement(wb):
                 "TimeToTrig — time-to-trigger duration.",
             ],
             "note": "Entering and leaving of event A4. Neighbour vs an absolute threshold. Same document schematic as Figure 4-3.",
+            "calc": [
+                "Formula. Enter: Mn + Ofn + Ocn − Hys > Thresh.  Leave: Mn + Ofn + Ocn + Hys < Thresh.",
+                "Teaching values. Mn = −90 dBm. Hys = 2 dB. Ofn = 0. Ocn = 0. Thresh = −105 dBm. Neighbour need not beat serving.",
+                "Enter.  Mn + Ofn + Ocn − Hys = −90 + 0 + 0 − 2 = −92 dBm.  −92 > −105 → YES. After 320 ms → Event A4. Target is absolutely good enough.",
+                "No enter.  If Mn = −110 dBm: −110 − 2 = −112 dBm.  −112 > −105 → NO. Target is not good enough.",
+                "Leave.  At Mn = −90: Mn + Hys = −90 + 2 = −88 dBm.  −88 < −105 → NO. A4 reporting stays on.",
+                "Leave.  If Mn falls to −110: −110 + 2 = −108 dBm.  −108 < −105 → YES. After 320 ms, A4 reporting stops.",
+                "Ping-pong note (same idea as Chapter 4). Keep A4_thd > A2_thd (example A4 = −105, A2 = −110) so coverage A2 does not start immediately after an A4 HO.",
+            ],
         },
         {
             "name": "A5",
@@ -510,6 +553,16 @@ def sheet_measurement(wb):
                 "TimeToTrig — time-to-trigger duration.",
             ],
             "note": "Entering and leaving of event A5. Serving vs Thresh1 and neighbour vs Thresh2. Same document schematic as Figure 4-3.",
+            "calc": [
+                "Formula. Enter: (Ms + Hys < Thresh1) AND (Mn + Ofn + Ocn − Hys > Thresh2).  Both must hold for TimeToTrig.",
+                "Leave: (Ms − Hys > Thresh1) OR (Mn + Ofn + Ocn + Hys < Thresh2).  Either is enough, for TimeToTrig.",
+                "Teaching values. Ms = −95 dBm. Mn = −90 dBm. Hys = 2 dB. Ofn = Ocn = 0. Thresh1 = −110 dBm. Thresh2 = −105 dBm.",
+                "No enter.  Serving: −95 + 2 = −93 < −110? NO.  Neighbour: −90 − 2 = −92 > −105? YES. AND fails → A5 does not start. Serving is not poor.",
+                "Enter.  If Ms = −115 dBm: serving −115 + 2 = −113 < −110 YES, and neighbour −92 > −105 YES. After 320 ms → Event A5.",
+                "Leave.  Still at Ms = −115, Mn = −90: −115 − 2 = −117 > −110? NO.  −90 + 2 = −88 < −105? NO. Neither leave side is true. A5 stays on.",
+                "Leave by serving.  If Ms recovers to −95: −95 − 2 = −97 > −110 → YES. After 320 ms, A5 reporting stops (OR is enough).",
+                "Leave by neighbour.  If Mn falls to −110: −110 + 2 = −108 < −105 → YES. After 320 ms, A5 reporting stops.",
+            ],
         },
         {
             "name": "B1",
@@ -527,6 +580,15 @@ def sheet_measurement(wb):
                 "TimeToTrig — time-to-trigger duration.",
             ],
             "note": "Entering and leaving of event B1. Inter-RAT neighbour vs an absolute threshold. Same document schematic as Figure 4-3.",
+            "calc": [
+                "Formula. Enter: Mn + Ofn − Hys > Thresh.  Leave: Mn + Ofn + Hys < Thresh.  Mn is the inter-RAT neighbour.",
+                "Teaching values. IRAT Mn = −92. Hys = 2 dB. Ofn = 0. Thresh = −100. Same idea as A4, other RAT.",
+                "Enter.  Mn + Ofn − Hys = −92 + 0 − 2 = −94.  −94 > −100 → YES. After 320 ms → Event B1. IRAT target is absolutely good enough.",
+                "No enter.  If IRAT Mn = −110: −110 − 2 = −112.  −112 > −100 → NO. IRAT target is not good enough.",
+                "Leave.  At Mn = −92: −92 + 2 = −90 < −100 → NO. B1 reporting stays on.",
+                "Leave.  If IRAT Mn falls to −110: −110 + 2 = −108 < −100 → YES. After 320 ms, B1 reporting stops.",
+                "TimeToTrig. If Mn + Ofn − Hys > Thresh for only 200 ms and then the IRAT cell drops, the timer resets and no B1 report is sent.",
+            ],
         },
         {
             "name": "B2",
@@ -546,6 +608,16 @@ def sheet_measurement(wb):
                 "TimeToTrig — time-to-trigger duration.",
             ],
             "note": "Entering and leaving of event B2. Serving vs Thresh1 and inter-RAT neighbour vs Thresh2. Same document schematic as Figure 4-3.",
+            "calc": [
+                "Formula. Enter: (Ms + Hys < Thresh1) AND (Mn + Ofn − Hys > Thresh2).  Mn is the inter-RAT neighbour.",
+                "Leave: (Ms − Hys > Thresh1) OR (Mn + Ofn + Hys < Thresh2).  Same shape as A5, other RAT.",
+                "Teaching values. Ms = −95 dBm. IRAT Mn = −92. Hys = 2 dB. Ofn = 0. Thresh1 = −110 dBm. Thresh2 = −100.",
+                "No enter.  Serving: −95 + 2 = −93 < −110? NO.  IRAT: −92 − 2 = −94 > −100? YES. AND fails → B2 does not start even if the IRAT cell is good.",
+                "Enter.  If Ms = −115 dBm: −115 + 2 = −113 < −110 YES, and −94 > −100 YES. After 320 ms → Event B2.",
+                "Leave.  Still at Ms = −115, Mn = −92: −115 − 2 = −117 > −110? NO.  −92 + 2 = −90 < −100? NO. B2 stays on.",
+                "Leave by serving.  If Ms recovers to −95: −95 − 2 = −97 > −110 → YES. After 320 ms, B2 reporting stops.",
+                "Leave by IRAT.  If Mn falls to −110: −110 + 2 = −108 < −100 → YES. After 320 ms, B2 reporting stops.",
+            ],
         },
     ]
 
@@ -555,6 +627,7 @@ def sheet_measurement(wb):
         d.h1(f"Event {ev['name']}")
         d.callout("CONDITION", f"Entering and leaving conditions  ·  3GPP TS 36.331 V10.1.0 §5.5.4  ·  Event {ev['name']}", ev["conds"])
         d.callout("CONDITION", f"Variables used in Figure {ev['fig']}", ev["vars"])
+        d.callout("CALC", f"Example with values  ·  Event {ev['name']}  ·  for understanding only  ·  not a live design", ev["calc"])
         d.h2(f"Figure {ev['fig']}  Entering and leaving of event {ev['name']}")
         d.para(ev["note"])
         d.embed_figure(FIG[ev["name"]], width_px=1100)
@@ -572,6 +645,7 @@ def sheet_measurement(wb):
     d.info_box("Combined summary", [
         "An event is an indication of signal quality. Table 4-8 is the definition of each event (A1–A5, B1, B2).",
         "Every event uses hysteresis and TimeToTrig. The entering or leaving inequality must stay true for the whole TimeToTrig.",
+        "Worked numbers on this sheet are one teaching set (Ms = −95 dBm, Hys = 2 dB, TTT = 320 ms). They are not a live design and must not go in the Value column.",
         "A1 serving good / A2 serving poor. A3 neighbour relatively better. A4 neighbour absolutely good. A5 serving poor AND neighbour good.",
         "B1 / B2 are the inter-RAT pair of A4 / A5.",
         "Which event a feature uses, and the live dBm, stay on Chapter 4 and the feature sheet. This sheet does not set a design value.",
