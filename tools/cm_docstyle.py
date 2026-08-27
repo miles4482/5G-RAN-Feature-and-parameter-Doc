@@ -195,10 +195,12 @@ class DocSheet:
             ws.cell(r, c).fill = fl(LIM_BG)
             ws.cell(r, c).border = no_b
         a.fill = fl(ADV_BG)
+        hdr = r
         self.r += 1
         n = max(len(left_items), len(right_items), 1)
         left = left_items + [""] * (n - len(left_items))
         right = right_items + [""] * (n - len(right_items))
+        body_start = self.r
         for i in range(n):
             r = self.r
             ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=3)
@@ -213,11 +215,20 @@ class DocSheet:
             ws.row_dimensions[r].height = h
             for c in range(1, 4):
                 ws.cell(r, c).fill = fl(ADV_BG)
-                ws.cell(r, c).border = no_b
             for c in range(4, COLS + 1):
                 ws.cell(r, c).fill = fl(LIM_BG)
-                ws.cell(r, c).border = no_b
             self.r += 1
+        last = self.r - 1
+        self._paint_range(hdr, 1, last, COLS)
+        for c in range(1, 4):
+            ws.cell(hdr, c).fill = fl(ADV_BG)
+        for c in range(4, COLS + 1):
+            ws.cell(hdr, c).fill = fl(LIM_BG)
+        for r in range(body_start, last + 1):
+            for c in range(1, 4):
+                ws.cell(r, c).fill = fl(ADV_BG)
+            for c in range(4, COLS + 1):
+                ws.cell(r, c).fill = fl(LIM_BG)
         return self
 
     def param_heads(self):
