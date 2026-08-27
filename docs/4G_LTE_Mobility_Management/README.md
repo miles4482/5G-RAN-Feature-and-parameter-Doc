@@ -4,20 +4,22 @@ One Word-like Excel file. One sheet per feature chapter of *Mobility Management 
 
 ## File
 
-Current version: **v2.6**
+Current version: **v3.0**
 
-[Connected_Mode_eRAN21.1_Feature_Sheets_v2.6.xlsx](./Connected_Mode_eRAN21.1_Feature_Sheets_v2.6.xlsx)
+[Connected_Mode_eRAN21.1_Feature_Sheets_v3.0.xlsx](./Connected_Mode_eRAN21.1_Feature_Sheets_v3.0.xlsx)
 
 ## How to read
 
-Open **00 Contents**, then **04 Basic Functions**, then **Measurement Event** (Table 4-8, charts with teaching trigger points, and a worked formula example for A1–A5, B1, B2), then features 5–14.
+Open **00 Contents**, then **04 Basic Functions**, then **Measurement Event**, then features 5–14. Start from **05 Coverage HO**.
 
-Every feature sheet now uses the same box style:
+Every feature sheet uses the same order:
 
-- **Common for sub-group** or **Overview of types** (boxed)
-- **Principle** (numbered, boxed)
-- Each sub-group, then Combined summary, then Parameter list
+- **Introduction** — sub-groups first
+- **Overview** — boxed types that support all sub-groups (Coverage: measurement-based, preferential blind, emergency-based, Event A2 families, UTRAN vs GERAN pick)
+- **Principle** — numbered points
+- Each **sub-group**, then **Combined summary**, then **Parameter list**
+- **Feature Activation** (lavender bar, last) — Chapter 4 basic MML first, then this feature’s MML in sequence. Remark at the end of each command.
 
 Gridlines are off. Thin black borders on boxes.
 
-Parameter list: SN | MO | Parameter | **Value** (blue) | Comment | Core | Sub-group | **Parameter Meaning** | **Reference**.
+Parameter list: SN | MO | Parameter | **Value** (blue, value only) | Comment | Core | Sub-group | **Parameter Meaning** | **Reference**.

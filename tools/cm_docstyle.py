@@ -24,6 +24,8 @@ LINK = "0563C1"
 WHITE = "FFFFFF"
 GOLD = "8A6D3B"
 VALUE_BLUE = "0070C0"
+ACT_BG = "6F5499"
+ACT_HDR = "EDE6F5"
 
 COLS = 9
 W = [5, 16, 26, 14, 26, 8, 14, 34, 38]
@@ -267,6 +269,56 @@ class DocSheet:
             cell = ws.cell(r, 7)
             cell.hyperlink = Hyperlink(ref=cell.coordinate, location=f"'{link_sheet}'!A1", display=str(group))
             cell.font = ft(10, True, LINK, underline="single")
+        self.r += 1
+        return self
+
+    def act_title(self):
+        """Feature Activation section bar (after Parameter list)."""
+        self.space(16)
+        self._merge(1, COLS, "  Feature Activation", size=13, bold=True, color=WHITE, bg=ACT_BG, align=L, h=26)
+        self.r += 1
+        self.space(8)
+        return self
+
+    def activation_heads(self):
+        ws, r = self.ws, self.r
+        ws.row_dimensions[r].height = 22
+        ws.merge_cells(start_row=r, start_column=2, end_row=r, end_column=6)
+        ws.merge_cells(start_row=r, start_column=7, end_row=r, end_column=COLS)
+        specs = [(1, 1, "SN"), (2, 6, "MML command  (in sequence)"), (7, COLS, "Remark")]
+        for c1, c2, name in specs:
+            cell = ws.cell(r, c1, name)
+            cell.font = ft(9, True, WHITE)
+            cell.fill = fl(ACT_BG)
+            cell.alignment = C
+            for c in range(c1, c2 + 1):
+                ws.cell(r, c).fill = fl(ACT_BG)
+                ws.cell(r, c).border = Border(bottom=Side(style="thin", color=ACT_BG))
+        self.r += 1
+        return self
+
+    def activation_row(self, sn, mml, remark):
+        ws, r = self.ws, self.r
+        ws.merge_cells(start_row=r, start_column=2, end_row=r, end_column=6)
+        ws.merge_cells(start_row=r, start_column=7, end_row=r, end_column=COLS)
+        h = min(72, 22 + max(len(str(mml)) // 70, len(str(remark)) // 55) * 12)
+        ws.row_dimensions[r].height = h
+        bg = ACT_HDR if sn % 2 else WHITE
+        a = ws.cell(r, 1, sn)
+        b = ws.cell(r, 2, mml)
+        c = ws.cell(r, 7, remark)
+        a.font = ft(10, True, TEXT)
+        b.font = Font(name="Consolas", size=9, color=TEXT)
+        c.font = ft(10, False, TEXT)
+        a.alignment = C
+        b.alignment = T
+        c.alignment = T
+        for col in range(1, COLS + 1):
+            ws.cell(r, col).fill = fl(bg)
+            ws.cell(r, col).border = Border(bottom=Side(style="hair", color=LINE))
+        a.fill = fl(bg)
+        b.fill = fl(bg)
+        c.fill = fl(bg)
         self.r += 1
         return self
 
